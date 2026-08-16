@@ -25,6 +25,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -56,7 +57,7 @@ public class BoletosView extends BorderPane implements Refreshable {
         VBox cabecalho = UiUtil.cabecalho("Central de boletos · a pagar e a receber",
                 "Acompanhe boletos de despesas e vendas futuras. Marque como pago/recebido quando o dinheiro transacionar.");
 
-        HBox resumo = criarResumo();
+        FlowPane resumo = criarResumo();
 
         TabPane tabs = new TabPane();
         tabs.getTabs().addAll(
@@ -78,11 +79,13 @@ public class BoletosView extends BorderPane implements Refreshable {
         refreshResumo();
     }
 
-    private HBox criarResumo() {
-        return new HBox(14,
+    private FlowPane criarResumo() {
+        FlowPane resumo = new FlowPane(14, 14,
                 criarCardResumo("Total a pagar", lblAPagar, "red"),
                 criarCardResumo("Total a receber", lblAReceber, "green"),
                 criarCardResumo("Pendências vencidas", lblVencidos, "yellow"));
+        resumo.setAlignment(Pos.CENTER_LEFT);
+        return resumo;
     }
 
     private VBox criarCardResumo(String rotulo, Label lValor, String cor) {

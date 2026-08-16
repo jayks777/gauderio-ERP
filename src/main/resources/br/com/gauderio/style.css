@@ -15,6 +15,12 @@
     -fx-background-color: #f2f4f7;
 }
 
+.content-scroll,
+.content-scroll > .viewport {
+    -fx-background-color: #f2f4f7;
+    -fx-background-insets: 0;
+}
+
 /* ========================================================
    CORES DA BANDEIRA GAÚCHA
    ======================================================== */
@@ -281,6 +287,16 @@
 
 .combo-box .arrow-button {
     -fx-background-color: transparent;
+}
+
+.date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 5px 0 5px 0;
+}
+
+.date-picker:focused > .text-field {
+    -fx-effect: null;
 }
 
 .check-box .box {
