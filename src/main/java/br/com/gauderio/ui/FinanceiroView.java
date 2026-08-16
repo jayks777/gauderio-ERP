@@ -45,6 +45,7 @@ public class FinanceiroView extends BorderPane implements Refreshable {
     private final TransacaoDAO transacaoDAO = new TransacaoDAO();
     private final ContaDAO contaDAO = new ContaDAO();
     private final CategoriaDAO categoriaDAO = new CategoriaDAO();
+    private final Runnable onDadosAlterados;
 
     private int idEmEdicao = -1;
 
@@ -71,6 +72,13 @@ public class FinanceiroView extends BorderPane implements Refreshable {
     private final TableView<Transacao> tabela = new TableView<>();
 
     public FinanceiroView() {
+        this(() -> {
+        });
+    }
+
+    public FinanceiroView(Runnable onDadosAlterados) {
+        this.onDadosAlterados = onDadosAlterados == null ? () -> {
+        } : onDadosAlterados;
         setPadding(new Insets(24));
         getStyleClass().add("content");
 
@@ -485,6 +493,7 @@ public class FinanceiroView extends BorderPane implements Refreshable {
                 idEmEdicao = -1;
                 limparFormulario();
                 aplicarFiltros();
+                onDadosAlterados.run();
                 return;
             }
 
@@ -501,6 +510,7 @@ public class FinanceiroView extends BorderPane implements Refreshable {
             }
             limparFormulario();
             aplicarFiltros();
+            onDadosAlterados.run();
         } catch (NumberFormatException ex) {
             alerta("Valor inválido. Use o formato 123,45.", Alert.AlertType.ERROR);
         } catch (Exception ex) {
@@ -552,6 +562,7 @@ public class FinanceiroView extends BorderPane implements Refreshable {
         transacaoDAO.setStatus(t.getId(), Transacao.STATUS_PAGO);
         tabela.refresh();
         aplicarFiltros();
+        onDadosAlterados.run();
     }
 
     private void excluirSelecionado() {
@@ -568,6 +579,7 @@ public class FinanceiroView extends BorderPane implements Refreshable {
                 .ifPresent(b -> {
                     transacaoDAO.delete(t.getId());
                     aplicarFiltros();
+                    onDadosAlterados.run();
                 });
     }
 

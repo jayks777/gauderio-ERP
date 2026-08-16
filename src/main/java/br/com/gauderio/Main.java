@@ -35,17 +35,29 @@ public class Main extends Application {
     private BorderPane areaCentral;
     private Label tituloPagina;
     private final Map<String, Button> botoesMenu = new LinkedHashMap<>();
+    private DashboardView dashboardView;
+    private FinanceiroView financeiroView;
+    private ContasView contasView;
+    private BoletosView boletosView;
+    private RelatoriosView relatoriosView;
+    private ConfiguracoesView configuracoesView;
 
     @Override
     public void start(Stage stage) {
         Database.init();
 
         root = new BorderPane();
+        dashboardView = new DashboardView();
+        contasView = new ContasView(this::recarregarPainelFinanceiro);
+        financeiroView = new FinanceiroView(this::recarregarPainelFinanceiro);
+        boletosView = new BoletosView();
+        relatoriosView = new RelatoriosView();
+        configuracoesView = new ConfiguracoesView();
 
         areaCentral = new BorderPane();
         areaCentral.setTop(criarCabecalho());
         areaCentral.setBottom(criarRodape());
-        areaCentral.setCenter(new DashboardView());
+        areaCentral.setCenter(dashboardView);
 
         root.setLeft(criarSidebar());
         root.setCenter(areaCentral);
@@ -79,12 +91,12 @@ public class Main extends Application {
 
         menu.getChildren().addAll(new VBox(2, logo, tagline), faixaTricolor(), criarSeparador());
 
-        adicionarBotaoMenu(menu, "Dashboard", "📊", new DashboardView());
-        adicionarBotaoMenu(menu, "Financeiro", "💵", new FinanceiroView());
-        adicionarBotaoMenu(menu, "Contas bancárias", "🏦", new ContasView());
-        adicionarBotaoMenu(menu, "Central de boletos", "🧾", new BoletosView());
-        adicionarBotaoMenu(menu, "Relatórios", "📈", new RelatoriosView());
-        adicionarBotaoMenu(menu, "Configurações", "⚙️", new ConfiguracoesView());
+        adicionarBotaoMenu(menu, "Dashboard", "📊", dashboardView);
+        adicionarBotaoMenu(menu, "Financeiro", "💵", financeiroView);
+        adicionarBotaoMenu(menu, "Contas bancárias", "🏦", contasView);
+        adicionarBotaoMenu(menu, "Central de boletos", "🧾", boletosView);
+        adicionarBotaoMenu(menu, "Relatórios", "📈", relatoriosView);
+        adicionarBotaoMenu(menu, "Configurações", "⚙️", configuracoesView);
 
         return menu;
     }
@@ -108,6 +120,12 @@ public class Main extends Application {
             r.refresh(); // recarrega os dados do banco ao abrir a tela
         }
         areaCentral.setCenter(view);
+    }
+
+    private void recarregarPainelFinanceiro() {
+        dashboardView.refresh();
+        contasView.refresh();
+        financeiroView.refresh();
     }
 
     private HBox faixaTricolor() {
