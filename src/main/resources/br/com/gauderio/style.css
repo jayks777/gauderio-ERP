@@ -350,7 +350,19 @@
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #dcebe1;
+    -fx-background-color: #d8eade;
+}
+
+.table-row-cell:filled:selected,
+.table-row-cell:filled:selected:hover,
+.table-row-cell:odd:filled:selected {
+    -fx-background-color: #d8eade;
+    -fx-border-color: transparent transparent #c9dccf transparent;
+}
+
+.table-view:focused .table-row-cell:filled:selected .table-cell,
+.table-view .table-row-cell:filled:selected .table-cell {
+    -fx-text-fill: #163224;
 }
 
 .table-row-cell:odd {
@@ -387,4 +399,50 @@
 .chart-pie-label {
     -fx-fill: #3d4c58;
     -fx-font-size: 11px;
+}
+
+/* ============================================================
+   ABAS DA CENTRAL DE BOLETOS
+   ============================================================ */
+
+.boletos-tabs {
+    -fx-tab-min-height: 38px;
+}
+
+.boletos-tabs .tab-header-area {
+    -fx-padding: 0 0 10px 0;
+}
+
+.boletos-tabs .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.boletos-tabs .tab {
+    -fx-background-color: #eef2f6;
+    -fx-background-radius: 10px 10px 0 0;
+    -fx-padding: 7px 16px;
+}
+
+.boletos-tabs .tab:hover {
+    -fx-background-color: #e3e9ef;
+}
+
+.boletos-tabs .tab .tab-label {
+    -fx-text-fill: #4f6070;
+    -fx-font-weight: bold;
+}
+
+.boletos-tabs .tab:selected {
+    -fx-background-color: white;
+    -fx-border-color: #0E7A3C #0E7A3C transparent #0E7A3C;
+    -fx-border-width: 2px 2px 0 2px;
+}
+
+.boletos-tabs .tab:selected .tab-label {
+    -fx-text-fill: #0E7A3C;
+}
+
+.boletos-tabs .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
 }
