@@ -34,6 +34,7 @@ public class ContasView extends BorderPane implements Refreshable {
 
     private final ContaDAO contaDAO = new ContaDAO();
     private final MovimentacaoDAO movimentacaoDAO = new MovimentacaoDAO();
+    private final Runnable onDadosAlterados;
 
     private int idContaEmEdicao = -1;
 
@@ -53,19 +54,28 @@ public class ContasView extends BorderPane implements Refreshable {
     private final TableView<MovimentacaoSaldo> tabelaMov = new TableView<>();
 
     public ContasView() {
+        this(() -> {
+        });
+    }
+
+    public ContasView(Runnable onDadosAlterados) {
+        this.onDadosAlterados = onDadosAlterados == null ? () -> {
+        } : onDadosAlterados;
         setPadding(new Insets(24));
         getStyleClass().add("content");
 
         VBox cabecalho = UiUtil.cabecalho("Contas bancárias",
                 "Cadastre as contas do banco, edite o saldo inicial e registre entradas e saídas de saldo manualmente.");
 
-        HBox linhaContas = new HBox(18, criarFormConta(), criarListaContas());
+        VBox listaContas = criarListaContas();
+        HBox linhaContas = new HBox(18, criarFormConta(), listaContas);
         linhaContas.setAlignment(Pos.TOP_LEFT);
-        HBox.setHgrow(criarListaContas(), Priority.ALWAYS);
+        HBox.setHgrow(listaContas, Priority.ALWAYS);
 
-        HBox linhaMov = new HBox(18, criarFormMovimentacao(), criarListaMovimentacoes());
+        VBox listaMovimentacoes = criarListaMovimentacoes();
+        HBox linhaMov = new HBox(18, criarFormMovimentacao(), listaMovimentacoes);
         linhaMov.setAlignment(Pos.TOP_LEFT);
-        HBox.setHgrow(criarListaMovimentacoes(), Priority.ALWAYS);
+        HBox.setHgrow(listaMovimentacoes, Priority.ALWAYS);
 
         VBox area = new VBox(16, cabecalho, linhaContas, linhaMov);
         setCenter(area);
@@ -237,6 +247,7 @@ public class ContasView extends BorderPane implements Refreshable {
         atualizarListaContas();
         novoConta();
         atualizarSobre();
+        onDadosAlterados.run();
     }
 
     private void excluirConta() {
@@ -256,6 +267,7 @@ public class ContasView extends BorderPane implements Refreshable {
                     novoConta();
                     tabelaMov.getItems().clear();
                     atualizarSobre();
+                    onDadosAlterados.run();
                 });
     }
 
@@ -376,6 +388,7 @@ public class ContasView extends BorderPane implements Refreshable {
         carregarMovimentacoes(conta);
         preencherFormDepoisSelecao(conta);
         alerta("Movimentação registrada! Saldo da conta atualizado.", Alert.AlertType.INFORMATION);
+        onDadosAlterados.run();
     }
 
     private void carregarMovimentacoes(ContaBancaria conta) {
