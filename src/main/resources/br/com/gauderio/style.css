@@ -1,0 +1,374 @@
+/* ========================================================
+   GAUDERIO-ERP · Folha de estilos
+   Paleta inspirada na bandeira do Rio Grande do Sul:
+   verde (#0E7A3C), vermelho (#C8102E) e amarelo (#F5A800).
+   Desenvolvido por Jaykson Bolico.
+   ======================================================== */
+
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-background-color: #f2f4f7;
+}
+
+.content {
+    -fx-background-color: #f2f4f7;
+}
+
+/* ========================================================
+   CORES DA BANDEIRA GAÚCHA
+   ======================================================== */
+
+.rs-green  { -fx-background-color: #0E7A3C; }
+.rs-red    { -fx-background-color: #C8102E; }
+.rs-yellow { -fx-background-color: #F5A800; }
+
+.accent-green  { -fx-background-color: #0E7A3C; }
+.accent-red    { -fx-background-color: #C8102E; }
+.accent-yellow { -fx-background-color: #F5A800; }
+.accent-blue   { -fx-background-color: #1B4F8A; }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.sidebar {
+    -fx-background-color: #151d27;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 18, 0, 2, 0);
+}
+
+.logo {
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.logo-subtitle {
+    -fx-text-fill: #9fb0bf;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.separator {
+    -fx-background-color: rgba(255,255,255,0.08);
+}
+
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #b9c5d1;
+    -fx-font-size: 14px;
+    -fx-padding: 12px 14px;
+    -fx-background-radius: 9px;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.menu-button:hover {
+    -fx-background-color: #243142;
+    -fx-text-fill: white;
+}
+
+.menu-button:pressed {
+    -fx-background-color: #2e4055;
+}
+
+.menu-button.active {
+    -fx-background-color: linear-gradient(to right, #0E7A3C, #12331f);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(14,122,60,0.35), 10, 0, 0, 2);
+}
+
+/* ============================================================
+   CABEÇALHO
+   ============================================================ */
+
+.header {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #e3e7ec transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.page-title {
+    -fx-font-size: 23px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1b2733;
+}
+
+.user-label {
+    -fx-text-fill: #5f707d;
+    -fx-font-size: 13px;
+    -fx-padding: 6px 14px;
+    -fx-background-color: #eef2f6;
+    -fx-background-radius: 20px;
+}
+
+/* ============================================================
+   RODAPÉ
+   ============================================================ */
+
+.footer {
+    -fx-background-color: #151d27;
+}
+
+.footer-text {
+    -fx-text-fill: #9fb0bf;
+    -fx-font-size: 12px;
+}
+
+/* ============================================================
+   TÍTULOS DE SEÇÃO
+   ============================================================ */
+
+.section-title {
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1b2733;
+}
+
+.section-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: #6d7c89;
+}
+
+.empty-text {
+    -fx-text-fill: #8a98a5;
+    -fx-font-size: 13px;
+    -fx-padding: 10;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 14px;
+    -fx-effect: dropshadow(gaussian, rgba(20,35,50,0.08), 14, 0, 0, 3);
+}
+
+.card-label {
+    -fx-text-fill: #5b6c7a;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.card-value {
+    -fx-text-fill: #1b2733;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.form-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1b2733;
+}
+
+.form-hint {
+    -fx-text-fill: #77858f;
+    -fx-font-size: 12px;
+    -fx-wrap-text: true;
+}
+
+.recorrencia-box {
+    -fx-background-color: #f4f7fa;
+    -fx-background-radius: 10px;
+    -fx-padding: 10 12;
+}
+
+.filter-bar {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-padding: 10 14;
+    -fx-effect: dropshadow(gaussian, rgba(20,35,50,0.06), 8, 0, 0, 2);
+}
+
+.about-text {
+    -fx-text-fill: #3d4c58;
+    -fx-font-size: 13px;
+    -fx-line-spacing: 4px;
+}
+
+.about-dev {
+    -fx-text-fill: #0E7A3C;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* ============================================================
+   BOTÕES
+   ============================================================ */
+
+.btn {
+    -fx-background-radius: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 10px 16px;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+
+.btn-green {
+    -fx-background-color: #0E7A3C;
+    -fx-text-fill: white;
+}
+
+.btn-green:hover {
+    -fx-background-color: #0A5F2F;
+}
+
+.btn-red {
+    -fx-background-color: #C8102E;
+    -fx-text-fill: white;
+}
+
+.btn-red:hover {
+    -fx-background-color: #A30D26;
+}
+
+.btn-yellow {
+    -fx-background-color: #F5A800;
+    -fx-text-fill: #3a2b00;
+}
+
+.btn-yellow:hover {
+    -fx-background-color: #D89400;
+}
+
+.btn-outline {
+    -fx-background-color: transparent;
+    -fx-text-fill: #41505c;
+    -fx-border-color: #c3ccd4;
+    -fx-border-radius: 9px;
+}
+
+.btn-outline:hover {
+    -fx-background-color: #eef2f6;
+}
+
+.btn-outline-red {
+    -fx-background-color: transparent;
+    -fx-text-fill: #C8102E;
+    -fx-border-color: #e5b0b7;
+    -fx-border-radius: 9px;
+}
+
+.btn-outline-red:hover {
+    -fx-background-color: rgba(200,16,46,0.08);
+}
+
+/* ============================================================
+   CAMPOS DE TEXTO, COMBO E CHECKBOX
+   ============================================================ */
+
+.text-field,
+.combo-box,
+.date-picker,
+.spinner,
+.text-area {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-border-color: #d4dbe2;
+    -fx-border-radius: 8px;
+    -fx-padding: 5px 10px;
+}
+
+.text-field:focused,
+.combo-box:focused,
+.date-picker:focused {
+    -fx-border-color: #0E7A3C;
+    -fx-effect: dropshadow(gaussian, rgba(14,122,60,0.15), 8, 0, 0, 0);
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #c9d2da;
+    -fx-border-radius: 4px;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #0E7A3C;
+}
+
+/* ============================================================
+   TABELAS
+   ============================================================ */
+
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #eef2f6;
+    -fx-background-radius: 10px 10px 0 0;
+}
+
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-size: 34px;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #45535f;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #edf1f4 transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 2px;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #f2f8f4;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #dcebe1;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #fafbfc;
+}
+
+.table-view .table-cell {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 8px;
+}
+
+/* ============================================================
+   GRÁFICOS
+   ============================================================ */
+
+.chart {
+    -fx-padding: 8px;
+}
+
+.chart-title {
+    -fx-text-fill: #1b2733;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.chart-legend {
+    -fx-background-color: transparent;
+}
+
+.chart-pie-label-line {
+    -fx-stroke: #b7c3cd;
+}
+
+.chart-pie-label {
+    -fx-fill: #3d4c58;
+    -fx-font-size: 11px;
+}

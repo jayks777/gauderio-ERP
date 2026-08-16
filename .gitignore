@@ -1,0 +1,5 @@
+target/
+gauderio.db
+*.db
+*.db-journal
+.vscode/
