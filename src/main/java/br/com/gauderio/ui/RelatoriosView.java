@@ -16,7 +16,6 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -83,10 +82,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         HBox.setHgrow(graficos2, Priority.ALWAYS);
 
         VBox area = new VBox(16, cabecalho, graficos, graficos2);
-        ScrollPane scroll = new ScrollPane(area);
-        scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color:transparent;");
-        setCenter(scroll);
+        setCenter(area);
 
         carregar();
     }

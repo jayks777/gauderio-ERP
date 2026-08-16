@@ -15,6 +15,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -57,7 +58,7 @@ public class Main extends Application {
         areaCentral = new BorderPane();
         areaCentral.setTop(criarCabecalho());
         areaCentral.setBottom(criarRodape());
-        areaCentral.setCenter(dashboardView);
+        areaCentral.setCenter(criarAreaRolavel(dashboardView));
 
         root.setLeft(criarSidebar());
         root.setCenter(areaCentral);
@@ -119,7 +120,16 @@ public class Main extends Application {
         if (view instanceof Refreshable r) {
             r.refresh(); // recarrega os dados do banco ao abrir a tela
         }
-        areaCentral.setCenter(view);
+        areaCentral.setCenter(criarAreaRolavel(view));
+    }
+
+    private ScrollPane criarAreaRolavel(Node conteudo) {
+        ScrollPane scroll = new ScrollPane(conteudo);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.getStyleClass().add("content-scroll");
+        return scroll;
     }
 
     private void recarregarPainelFinanceiro() {
