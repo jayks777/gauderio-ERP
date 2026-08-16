@@ -23,6 +23,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
@@ -60,6 +61,7 @@ public class BoletosView extends BorderPane implements Refreshable {
         FlowPane resumo = criarResumo();
 
         TabPane tabs = new TabPane();
+        tabs.getStyleClass().add("boletos-tabs");
         tabs.getTabs().addAll(
                 criarTab("Boletos a pagar", Transacao.TIPO_DESPESA),
                 criarTab("Vendas / a receber", Transacao.TIPO_RECEITA));
@@ -149,6 +151,7 @@ public class BoletosView extends BorderPane implements Refreshable {
 
     private TableView<Transacao> criarTabelaPendentes(String tipo) {
         TableView<Transacao> tabela = new TableView<>();
+        tabela.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         TableColumn<Transacao, String> cVenc = new TableColumn<>("Vencimento");
         cVenc.setCellValueFactory(d -> new javafx.beans.property.ReadOnlyStringWrapper(
@@ -309,18 +312,20 @@ public class BoletosView extends BorderPane implements Refreshable {
     }
 
     private void excluir(String tipo, TableView<Transacao> tabela) {
-        Transacao t = tabela.getSelectionModel().getSelectedItem();
-        if (t == null) {
-            alerta("Selecione uma pendência na lista.", Alert.AlertType.WARNING);
+        List<Transacao> selecionadas = new ArrayList<>(tabela.getSelectionModel().getSelectedItems());
+        if (selecionadas.isEmpty()) {
+            alerta("Selecione ao menos uma pendência na lista.", Alert.AlertType.WARNING);
             return;
         }
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Excluir \"" + t.getDescricao() + "\"?");
+        String mensagem = selecionadas.size() == 1
+                ? "Excluir \"" + selecionadas.get(0).getDescricao() + "\"?"
+                : "Excluir " + selecionadas.size() + " pendências selecionadas?";
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, mensagem);
         confirm.setHeaderText("Confirmar exclusão");
         confirm.showAndWait()
                 .filter(b -> b == ButtonType.OK)
                 .ifPresent(b -> {
-                    transacaoDAO.delete(t.getId());
+                    selecionadas.forEach(t -> transacaoDAO.delete(t.getId()));
                     popularPendentes(tabela, tipo);
                     refreshResumo();
                 });
