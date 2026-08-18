@@ -58,6 +58,28 @@ public class Transacao {
         return status;
     }
 
+    /** Texto amigável do tipo, no dia a dia: Entrada ou Saída. */
+    public String getTipoTexto() {
+        return TIPO_RECEITA.equals(tipo) ? "Entrada" : "Saída";
+    }
+
+    /** Situação com linguagem simples e contextual: Pendente, Paga, Recebida ou Vencida. */
+    public String getStatusTexto() {
+        String exibido = getStatusExibido();
+        if ("VENCIDO".equals(exibido)) {
+            return "Vencida";
+        }
+        if (TIPO_DESPESA.equals(tipo)) {
+            return STATUS_PAGO.equals(exibido) ? "Paga" : "Pendente";
+        }
+        return STATUS_PAGO.equals(exibido) ? "Recebida" : "Pendente";
+    }
+
+    /** Verdadeiro quando o lançamento ainda está pendente e a data de referência já passou. */
+    public boolean isVencida() {
+        return STATUS_PENDENTE.equals(status) && getDataReferencia().isBefore(LocalDate.now());
+    }
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 

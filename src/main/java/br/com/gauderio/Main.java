@@ -1,11 +1,11 @@
 package br.com.gauderio;
 
 import br.com.gauderio.db.Database;
-import br.com.gauderio.ui.BoletosView;
 import br.com.gauderio.ui.ConfiguracoesView;
+import br.com.gauderio.ui.ContasParaView;
 import br.com.gauderio.ui.ContasView;
 import br.com.gauderio.ui.DashboardView;
-import br.com.gauderio.ui.FinanceiroView;
+import br.com.gauderio.ui.MovimentacoesView;
 import br.com.gauderio.ui.Refreshable;
 import br.com.gauderio.ui.RelatoriosView;
 import javafx.application.Application;
@@ -29,6 +29,9 @@ import java.util.Map;
 /**
  * Gauderio-ERP — sistema financeiro em JavaFX com SQLite.
  * Desenvolvido por Jaykson Bolico.
+ *
+ * Navegação organizada por seções para facilitar o uso por quem
+ * não tem experiência com sistemas financeiros.
  */
 public class Main extends Application {
 
@@ -36,10 +39,13 @@ public class Main extends Application {
     private BorderPane areaCentral;
     private Label tituloPagina;
     private final Map<String, Button> botoesMenu = new LinkedHashMap<>();
+    private final Map<Node, Button> botaoPorView = new LinkedHashMap<>();
+
     private DashboardView dashboardView;
-    private FinanceiroView financeiroView;
+    private MovimentacoesView movimentacoesView;
+    private ContasParaView contasPagarView;
+    private ContasParaView contasReceberView;
     private ContasView contasView;
-    private BoletosView boletosView;
     private RelatoriosView relatoriosView;
     private ConfiguracoesView configuracoesView;
 
@@ -47,11 +53,18 @@ public class Main extends Application {
     public void start(Stage stage) {
         Database.init();
 
+        Runnable onDadosAlterados = this::recarregarPainelFinanceiro;
+
         root = new BorderPane();
-        dashboardView = new DashboardView();
-        contasView = new ContasView(this::recarregarPainelFinanceiro);
-        financeiroView = new FinanceiroView(this::recarregarPainelFinanceiro);
-        boletosView = new BoletosView();
+        dashboardView = new DashboardView(
+                () -> abrirRegistrar(true),
+                () -> abrirRegistrar(false),
+                () -> navegarPara(contasPagarView, "Contas a pagar"),
+                () -> navegarPara(contasReceberView, "Contas a receber"));
+        movimentacoesView = new MovimentacoesView(onDadosAlterados);
+        contasPagarView = new ContasParaView(false, onDadosAlterados);
+        contasReceberView = new ContasParaView(true, onDadosAlterados);
+        contasView = new ContasView(onDadosAlterados);
         relatoriosView = new RelatoriosView();
         configuracoesView = new ConfiguracoesView();
 
@@ -77,7 +90,6 @@ public class Main extends Application {
     // =========================================================
     // MENU LATERAL
     // =========================================================
-
     private Node criarSidebar() {
         VBox menu = new VBox(8);
         menu.setPadding(new Insets(20, 14, 20, 14));
@@ -92,25 +104,77 @@ public class Main extends Application {
 
         menu.getChildren().addAll(new VBox(2, logo, tagline), faixaTricolor(), criarSeparador());
 
-        adicionarBotaoMenu(menu, "Dashboard", "📊", dashboardView);
-        adicionarBotaoMenu(menu, "Financeiro", "💵", financeiroView);
-        adicionarBotaoMenu(menu, "Contas bancárias", "🏦", contasView);
-        adicionarBotaoMenu(menu, "Central de boletos", "🧾", boletosView);
-        adicionarBotaoMenu(menu, "Relatórios", "📈", relatoriosView);
-        adicionarBotaoMenu(menu, "Configurações", "⚙️", configuracoesView);
+        adicionarSecao(menu, "INÍCIO");
+        adicionarBotaoMenu(menu, "Dashboard", "📊  Dashboard", dashboardView);
+
+        adicionarSecao(menu, "MOVIMENTAÇÕES");
+        adicionarBotaoMenu(menu, "Movimentações", "📥  Registrar entrada", movimentacoesView,
+                () -> movimentacoesView.mostrarRegistro(true));
+        adicionarBotaoMenu(menu, "Movimentações", "📤  Registrar saída", movimentacoesView,
+                () -> movimentacoesView.mostrarRegistro(false));
+        adicionarBotaoMenu(menu, "Movimentações", "🗒️  Histórico", movimentacoesView,
+                () -> movimentacoesView.mostrarHistorico());
+
+        adicionarSecao(menu, "CONTAS A PAGAR");
+        adicionarBotaoMenu(menu, "Contas a pagar", "🧾  Contas a pagar", contasPagarView);
+
+        adicionarSecao(menu, "CONTAS A RECEBER");
+        adicionarBotaoMenu(menu, "Contas a receber", "💰  Contas a receber", contasReceberView);
+
+        adicionarSecao(menu, "BANCOS E RELATÓRIOS");
+        adicionarBotaoMenu(menu, "Contas bancárias", "🏦  Contas bancárias", contasView);
+        adicionarBotaoMenu(menu, "Relatórios", "📈  Relatórios", relatoriosView);
+
+        adicionarSecao(menu, "CONFIGURAÇÕES");
+        adicionarBotaoMenu(menu, "Configurações", "🏷️  Categorias", configuracoesView,
+                () -> configuracoesView.selecionarCategorias());
+        adicionarBotaoMenu(menu, "Configurações", "ℹ️  Sobre", configuracoesView,
+                () -> configuracoesView.selecionarSobre());
 
         return menu;
     }
 
-    private void adicionarBotaoMenu(VBox menu, String rotulo, String icone, Node view) {
-        String nome = rotulo.substring(rotulo.indexOf(' ') + 1);
-        Button botao = new Button(icone + "  " + rotulo);
+    private void adicionarSecao(VBox menu, String titulo) {
+        Label secao = new Label(titulo);
+        secao.getStyleClass().add("menu-section");
+        menu.getChildren().add(secao);
+    }
+
+    private void adicionarBotaoMenu(VBox menu, String tituloPagina, String rotulo, Node view) {
+        adicionarBotaoMenu(menu, tituloPagina, rotulo, view, null);
+    }
+
+    private void adicionarBotaoMenu(VBox menu, String tituloPagina, String rotulo, Node view, Runnable extra) {
+        Button botao = new Button(rotulo);
         botao.setMaxWidth(Double.MAX_VALUE);
         botao.setAlignment(Pos.CENTER_LEFT);
         botao.getStyleClass().add("menu-button");
-        botao.setOnAction(e -> navegar(rotulo, botao, view));
-        botoesMenu.put(nome, botao);
+        botao.setOnAction(e -> {
+            navegar(tituloPagina, botao, view);
+            if (extra != null) {
+                extra.run();
+            }
+        });
+        botoesMenu.put(rotulo, botao);
+        botaoPorView.putIfAbsent(view, botao);
         menu.getChildren().add(botao);
+    }
+
+    // =========================================================
+    // NAVEGAÇÃO
+    // =========================================================
+    /** Navegação programática (ex.: botões de "Ações rápidas" do Dashboard). */
+    private void navegarPara(Node view, String titulo) {
+        Button botao = botaoPorView.get(view);
+        if (botao != null) {
+            navegar(titulo, botao, view);
+        } else {
+            tituloPagina.setText(titulo);
+            if (view instanceof Refreshable r) {
+                r.refresh();
+            }
+            areaCentral.setCenter(criarAreaRolavel(view));
+        }
     }
 
     private void navegar(String titulo, Button botao, Node view) {
@@ -121,6 +185,11 @@ public class Main extends Application {
             r.refresh(); // recarrega os dados do banco ao abrir a tela
         }
         areaCentral.setCenter(criarAreaRolavel(view));
+    }
+
+    private void abrirRegistrar(boolean entrada) {
+        navegarPara(movimentacoesView, "Movimentações");
+        movimentacoesView.mostrarRegistro(entrada);
     }
 
     private ScrollPane criarAreaRolavel(Node conteudo) {
@@ -134,10 +203,15 @@ public class Main extends Application {
 
     private void recarregarPainelFinanceiro() {
         dashboardView.refresh();
+        movimentacoesView.refresh();
+        contasPagarView.refresh();
+        contasReceberView.refresh();
         contasView.refresh();
-        financeiroView.refresh();
     }
 
+    // =========================================================
+    // ELEMENTOS VISUAIS (faixa tricolor, cabeçalho e rodapé)
+    // =========================================================
     private HBox faixaTricolor() {
         HBox faixa = new HBox();
         faixa.setPrefHeight(6);

@@ -29,7 +29,7 @@ import javafx.scene.layout.VBox;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Controle das contas do banco, com entrada e saída manual de saldo. */
+/** Controle das contas do banco, com ajuste manual de saldo quando necessário. */
 public class ContasView extends BorderPane implements Refreshable {
 
     private final ContaDAO contaDAO = new ContaDAO();
@@ -46,7 +46,7 @@ public class ContasView extends BorderPane implements Refreshable {
     private final Label lblContaMov = new Label("Selecione uma conta na lista");
 
     private final ComboBox<String> tipoMovCombo = new ComboBox<>(
-            FXCollections.observableArrayList(MovimentacaoSaldo.ENTRADA, MovimentacaoSaldo.SAIDA));
+            FXCollections.observableArrayList("Entrada (aumenta o saldo)", "Saída (diminui o saldo)"));
     private final TextField descMovField = new TextField();
     private final TextField valorMovField = new TextField();
 
@@ -65,7 +65,7 @@ public class ContasView extends BorderPane implements Refreshable {
         getStyleClass().add("content");
 
         VBox cabecalho = UiUtil.cabecalho("Contas bancárias",
-                "Cadastre as contas do banco, edite o saldo inicial e registre entradas e saídas de saldo manualmente.");
+                "Cadastre suas contas do banco e acompanhe o saldo de cada uma.");
 
         VBox listaContas = criarListaContas();
         HBox linhaContas = new HBox(18, criarFormConta(), listaContas);
@@ -80,7 +80,7 @@ public class ContasView extends BorderPane implements Refreshable {
         VBox area = new VBox(16, cabecalho, linhaContas, linhaMov);
         setCenter(area);
 
-        tipoMovCombo.setValue(MovimentacaoSaldo.ENTRADA);
+        tipoMovCombo.setValue("Entrada (aumenta o saldo)");
         atualizarSobre();
     }
 
@@ -102,8 +102,8 @@ public class ContasView extends BorderPane implements Refreshable {
         Label titulo = new Label("Dados da conta");
         titulo.getStyleClass().add("form-title");
 
-        nomeField.setPromptText("Ex.: Conta corrente Itaú");
-        bancoField.setPromptText("Banco (Ex.: Itaú, Caixa)");
+        nomeField.setPromptText("Ex.: Conta corrente Banco do Brasil");
+        bancoField.setPromptText("Banco (Ex.: Banrisul, BB, Caixa)");
         agenciaField.setPromptText("Agência");
         numeroField.setPromptText("Número da conta");
         saldoInicialField.setPromptText("0,00");
@@ -122,11 +122,17 @@ public class ContasView extends BorderPane implements Refreshable {
         grid.add(new Label("Saldo inicial"), 0, 8);
         grid.add(saldoInicialField, 0, 9);
 
-        Button salvar = new Button("Salvar conta");
+        Label ajudaSaldo = new Label("Informe quanto havia disponível nessa conta quando você começou "
+                + "a usar o Gauderio-ERP. Se não souber, deixe 0,00.");
+        ajudaSaldo.getStyleClass().add("form-hint");
+        ajudaSaldo.setWrapText(true);
+        ajudaSaldo.setMaxWidth(290);
+
+        Button salvar = new Button("Salvar");
         salvar.getStyleClass().addAll("btn", "btn-green");
         salvar.setOnAction(e -> salvarConta());
 
-        Button novo = new Button("Novo");
+        Button novo = new Button("Nova conta");
         novo.getStyleClass().addAll("btn", "btn-outline");
         novo.setOnAction(e -> novoConta());
 
@@ -137,7 +143,7 @@ public class ContasView extends BorderPane implements Refreshable {
         HBox botoes = new HBox(8, salvar, novo, excluir);
         botoes.setAlignment(Pos.CENTER_LEFT);
 
-        card.getChildren().addAll(titulo, grid, botoes);
+        card.getChildren().addAll(titulo, grid, ajudaSaldo, botoes);
         return card;
     }
 
@@ -277,9 +283,15 @@ public class ContasView extends BorderPane implements Refreshable {
         card.setPadding(new Insets(16));
         card.setPrefWidth(330);
 
-        Label titulo = new Label("Entrada e saída de saldo");
+        Label titulo = new Label("Ajuste de saldo");
         titulo.getStyleClass().add("form-title");
         lblContaMov.getStyleClass().add("form-hint");
+
+        Label ajudaAjuste = new Label("Use esta opção somente quando o saldo mostrado pelo sistema for "
+                + "diferente do saldo real da conta. Para registrar entradas e saídas normais, use Movimentações.");
+        ajudaAjuste.getStyleClass().add("form-hint");
+        ajudaAjuste.setWrapText(true);
+        ajudaAjuste.setMaxWidth(290);
 
         tipoMovCombo.setMaxWidth(Double.MAX_VALUE);
         descMovField.setPromptText("Motivo (Ex.: depósito, saque, transferência)");
@@ -288,18 +300,18 @@ public class ContasView extends BorderPane implements Refreshable {
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(8);
-        grid.add(new Label("Tipo de movimento"), 0, 0);
+        grid.add(new Label("Tipo de ajuste"), 0, 0);
         grid.add(tipoMovCombo, 0, 1);
         grid.add(new Label("Descrição"), 0, 2);
         grid.add(descMovField, 0, 3);
         grid.add(new Label("Valor"), 0, 4);
         grid.add(valorMovField, 0, 5);
 
-        Button registrar = new Button("Registrar movimentação");
+        Button registrar = new Button("Registrar ajuste");
         registrar.getStyleClass().addAll("btn", "btn-yellow");
         registrar.setOnAction(e -> registrarMovimentacao());
 
-        card.getChildren().addAll(titulo, lblContaMov, grid, registrar);
+        card.getChildren().addAll(titulo, lblContaMov, grid, ajudaAjuste, registrar);
         return card;
     }
 
@@ -365,7 +377,7 @@ public class ContasView extends BorderPane implements Refreshable {
             return;
         }
         String descricao = descMovField.getText() == null || descMovField.getText().isBlank()
-                ? "Movimentação manual de saldo"
+                ? "Ajuste manual de saldo"
                 : descMovField.getText().trim();
         double valor;
         try {
@@ -379,7 +391,13 @@ public class ContasView extends BorderPane implements Refreshable {
             return;
         }
 
-        String tipo = tipoMovCombo.getValue() == null ? MovimentacaoSaldo.ENTRADA : tipoMovCombo.getValue();
+        String valorCombo = tipoMovCombo.getValue();
+        String tipo;
+        if ("Saída (diminui o saldo)".equals(valorCombo)) {
+            tipo = MovimentacaoSaldo.SAIDA;
+        } else {
+            tipo = MovimentacaoSaldo.ENTRADA;
+        }
         movimentacaoDAO.insert(new MovimentacaoSaldo(conta.getId(), tipo, descricao, valor, LocalDate.now()));
 
         descMovField.clear();
@@ -387,7 +405,7 @@ public class ContasView extends BorderPane implements Refreshable {
         atualizarListaContas();
         carregarMovimentacoes(conta);
         preencherFormDepoisSelecao(conta);
-        alerta("Movimentação registrada! Saldo da conta atualizado.", Alert.AlertType.INFORMATION);
+        alerta("Ajuste registrado! O saldo da conta foi atualizado.", Alert.AlertType.INFORMATION);
         onDadosAlterados.run();
     }
 

@@ -446,3 +446,70 @@
     -fx-background-color: transparent;
     -fx-padding: 0;
 }
+
+/* ============================================================
+   SEÇÕES DO MENU LATERAL
+   ============================================================ */
+
+.menu-section {
+    -fx-text-fill: #7d8fa1;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 12px 14px 2px 14px;
+}
+
+/* ============================================================
+   ABAS PADRÃO DAS TELAS (Movimentações, Configurações, Contas)
+   ============================================================ */
+
+.conta-tabs {
+    -fx-tab-min-height: 36px;
+}
+
+.conta-tabs .tab-header-area {
+    -fx-padding: 0 0 10px 0;
+}
+
+.conta-tabs .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.conta-tabs .tab {
+    -fx-background-color: #eef2f6;
+    -fx-background-radius: 10px 10px 0 0;
+    -fx-padding: 7px 16px;
+}
+
+.conta-tabs .tab:hover {
+    -fx-background-color: #e3e9ef;
+}
+
+.conta-tabs .tab .tab-label {
+    -fx-text-fill: #4f6070;
+    -fx-font-weight: bold;
+}
+
+.conta-tabs .tab:selected {
+    -fx-background-color: white;
+    -fx-border-color: #0E7A3C #0E7A3C transparent #0E7A3C;
+    -fx-border-width: 2px 2px 0 2px;
+}
+
+.conta-tabs .tab:selected .tab-label {
+    -fx-text-fill: #0E7A3C;
+}
+
+.conta-tabs .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* ============================================================
+   TEXTOS AUXILIARES DOS CARDS
+   ============================================================ */
+
+.card-sub {
+    -fx-text-fill: #7b8a96;
+    -fx-font-size: 11px;
+    -fx-wrap-text: true;
+}

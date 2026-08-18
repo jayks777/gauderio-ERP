@@ -182,6 +182,49 @@ public class TransacaoDAO {
         }
     }
 
+    /** Marca como paga/recebida e grava a data em que o dinheiro efetivamente transacionou. */
+    public void marcarPaga(int id, LocalDate dataPagamento) {
+        String sql = "UPDATE transacoes SET status = ?, data = ? WHERE id = ?";
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, Transacao.STATUS_PAGO);
+            ps.setString(2, dataPagamento.toString());
+            ps.setInt(3, id);
+            ps.executeUpdate();
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao marcar como paga", ex);
+        }
+    }
+
+    /** Total pendente vencido de um tipo (a pagar ou a receber). */
+    public double somaVencido(String tipo) {
+        String sql = """
+                SELECT COALESCE(SUM(valor), 0) FROM transacoes
+                WHERE status = 'PENDENTE' AND tipo = ? AND COALESCE(vencimento, data) < ?
+                """;
+        try (Connection c = Database.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, tipo);
+            ps.setString(2, LocalDate.now().toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getDouble(1);
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Erro ao somar pendências vencidas", ex);
+        }
+    }
+
+    /** Lançamentos pendentes com vencimento entre hoje e a data informada (limite de linhas). */
+    public List<Transacao> proximosVencimentos(LocalDate fim, int limite) {
+        return consultar("""
+                SELECT * FROM transacoes
+                WHERE status = 'PENDENTE' AND COALESCE(vencimento, data) BETWEEN ? AND ?
+                ORDER BY COALESCE(vencimento, data) ASC, id ASC
+                LIMIT ?
+                """, LocalDate.now().toString(), fim.toString(), limite);
+    }
+
     /** Soma dos lançamentos PAGOS de um tipo dentro do período. */
     public double somaPagaEntre(String tipo, LocalDate inicio, LocalDate fim) {
         String sql = """

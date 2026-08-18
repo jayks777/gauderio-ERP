@@ -29,4 +29,14 @@ public final class Formatador {
         }
         return Double.parseDouble(texto.trim().replace(".", "").replace(",", "."));
     }
+
+    /** Mensagem amigável quando o valor digitado não pode ser lido. */
+    public static String mensagemValorInvalido() {
+        return "Informe um valor válido, por exemplo: 125,50.";
+    }
+
+    /** Mensagem amigável quando a descrição está vazia. */
+    public static String mensagemDescricaoObrigatoria() {
+        return "Informe uma descrição. Ex.: Venda de produtos ou Conta de luz.";
+    }
 }

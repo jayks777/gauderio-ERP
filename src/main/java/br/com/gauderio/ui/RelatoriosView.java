@@ -22,24 +22,34 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Gráficos e relatórios para análise financeira. */
+/**
+ * Relatórios e gráficos financeiros, com resumo no topo e filtros
+ * de período, ano e tipo — em linguagem simples.
+ */
 public class RelatoriosView extends BorderPane implements Refreshable {
 
     private final TransacaoDAO transacaoDAO = new TransacaoDAO();
 
+    private final ComboBox<String> periodoCombo = new ComboBox<>(FXCollections.observableArrayList(
+            "Ano completo", "1º semestre (jan–jun)", "2º semestre (jul–dez)"));
     private final Spinner<Integer> anoSpan = new Spinner<>(2000, 2100, LocalDate.now().getYear());
     private final ComboBox<String> tipoCombo = new ComboBox<>(
-            FXCollections.observableArrayList("Todas", Transacao.TIPO_RECEITA, Transacao.TIPO_DESPESA));
+            FXCollections.observableArrayList("Todas", "Receitas", "Despesas"));
+
+    private final Label lblReceitas = new Label();
+    private final Label lblDespesas = new Label();
+    private final Label lblResultado = new Label();
 
     private final BarChart<String, Number> barra = new BarChart<>(new CategoryAxis(), new NumberAxis());
     private final LineChart<String, Number> linha = new LineChart<>(new CategoryAxis(), new NumberAxis());
@@ -51,6 +61,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         getStyleClass().add("content");
 
         anoSpan.setPrefWidth(110);
+        periodoCombo.setValue("Ano completo");
         tipoCombo.setValue("Todas");
 
         Button atualizar = new Button("Gerar relatório");
@@ -58,22 +69,24 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         atualizar.setOnAction(e -> carregar());
 
         HBox filtros = new HBox(10,
+                new Label("Período:"), periodoCombo,
                 new Label("Ano:"), anoSpan,
                 new Label("Tipo:"), tipoCombo,
                 atualizar);
         filtros.setAlignment(Pos.CENTER_LEFT);
         filtros.getStyleClass().add("filter-bar");
 
-        VBox cabecalho = new VBox(4,
-                UiUtil.cabecalho("Relatórios e gráficos",
-                        "Análise financeira de lançamentos pagos/recebidos no ano."),
-                filtros);
+        VBox cabecalho = new VBox(12,
+                UiUtil.cabecalho("Relatórios",
+                        "Veja quanto entrou e quanto saiu no período escolhido."),
+                filtros,
+                criarResumo());
 
         barra.setTitle("Receitas × Despesas por mês");
         barra.setPrefHeight(300);
-        linha.setTitle("Saldo acumulado no ano");
+        linha.setTitle("Resultado acumulado do período");
         linha.setPrefHeight(300);
-        pizza.setTitle("Distribuição (por categoria)");
+        pizza.setTitle("Distribuição por categoria");
         pizza.setPrefHeight(300);
 
         HBox graficos = new HBox(18, wrapCard(barra), wrapCard(linha));
@@ -92,6 +105,43 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         carregar();
     }
 
+    private VBox criarResumo() {
+        Label rotuloResumo = new Label("RESUMO DO PERÍODO");
+        rotuloResumo.getStyleClass().add("card-label");
+
+        FlowPane cards = new FlowPane(14, 14);
+        cards.getChildren().addAll(
+                criarCardResumo("Receitas", lblReceitas, "green"),
+                criarCardResumo("Despesas", lblDespesas, "red"),
+                criarCardResumo("Resultado", lblResultado, "yellow"));
+        cards.setAlignment(Pos.CENTER_LEFT);
+        return new VBox(6, rotuloResumo, cards);
+    }
+
+    private VBox criarCardResumo(String rotulo, Label lValor, String cor) {
+        VBox card = new VBox(10);
+        card.getStyleClass().add("card");
+        card.setPadding(new Insets(0));
+        card.setPrefWidth(220);
+
+        Region faixa = new Region();
+        faixa.setPrefHeight(6);
+        faixa.setMaxWidth(Double.MAX_VALUE);
+        faixa.getStyleClass().add("accent-" + cor);
+
+        Label l = new Label(rotulo.toUpperCase());
+        l.getStyleClass().add("card-label");
+        l.setPadding(new Insets(10, 12, 0, 12));
+        lValor.getStyleClass().add("card-value");
+        lValor.setPadding(new Insets(0, 12, 12, 12));
+
+        card.getChildren().addAll(faixa, l, lValor);
+        return card;
+    }
+
+    // =========================================================
+    // CARREGAMENTO DOS DADOS
+    // =========================================================
     private VBox wrapCard(javafx.scene.Node node) {
         VBox card = new VBox(node);
         card.getStyleClass().add("card");
@@ -104,6 +154,12 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         int ano = anoSpan.getValue();
         LocalDate inicio = LocalDate.of(ano, 1, 1);
         LocalDate fim = LocalDate.of(ano, 12, 31);
+        String periodo = periodoCombo.getValue() == null ? "Ano completo" : periodoCombo.getValue();
+        if ("1º semestre (jan–jun)".equals(periodo)) {
+            fim = LocalDate.of(ano, 6, 30);
+        } else if ("2º semestre (jul–dez)".equals(periodo)) {
+            inicio = LocalDate.of(ano, 7, 1);
+        }
         String tipoFiltro = tipoCombo.getValue() == null ? "Todas" : tipoCombo.getValue();
 
         List<Transacao> pagas = transacaoDAO.pagasEntre(inicio, fim);
@@ -117,8 +173,12 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         double totalDespesas = 0;
 
         for (Transacao t : pagas) {
-            if (!"Todas".equals(tipoFiltro) && !tipoFiltro.equals(t.getTipo())) {
-                continue;
+            if (!"Todas".equals(tipoFiltro)) {
+                String tipoEsperado = "Receitas".equals(tipoFiltro)
+                        ? Transacao.TIPO_RECEITA : Transacao.TIPO_DESPESA;
+                if (!tipoEsperado.equals(t.getTipo())) {
+                    continue;
+                }
             }
             int mes = t.getData().getMonthValue() - 1;
             if (Transacao.TIPO_RECEITA.equals(t.getTipo())) {
@@ -133,6 +193,12 @@ public class RelatoriosView extends BorderPane implements Refreshable {
             porCategoria.merge(cat, t.getValor(), Double::sum);
         }
 
+        lblReceitas.setText(Formatador.moeda(totalReceitas));
+        lblDespesas.setText(Formatador.moeda(totalDespesas));
+        lblResultado.setText(Formatador.moeda(totalReceitas - totalDespesas));
+        lblResultado.setStyle(totalReceitas - totalDespesas >= 0
+                ? "-fx-text-fill:#0E7A3C;" : "-fx-text-fill:#C8102E;");
+
         barra.getData().clear();
         XYChart.Series<String, Number> serieReceitas = new XYChart.Series<>();
         serieReceitas.setName("Receitas");
@@ -146,7 +212,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
 
         linha.getData().clear();
         XYChart.Series<String, Number> serieAcumulo = new XYChart.Series<>();
-        serieAcumulo.setName("Saldo acumulado");
+        serieAcumulo.setName("Resultado acumulado");
         double acumulado = 0;
         for (int i = 0; i < 12; i++) {
             acumulado += receitas[i] - despesas[i];
@@ -173,13 +239,16 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         tabela.refresh();
     }
 
+    // =========================================================
+    // TABELA MÊS A MÊS
+    // =========================================================
     private VBox createTabelaCard() {
         VBox card = new VBox(10);
         card.getStyleClass().add("card");
         card.setPadding(new Insets(14));
         card.setPrefWidth(520);
 
-        Label titulo = new Label("Relatório mensal do ano");
+        Label titulo = new Label("Mês a mês");
         titulo.getStyleClass().add("card-label");
 
         TableColumn<LinhaMensal, String> cMes = new TableColumn<>("Mês");
