@@ -105,30 +105,30 @@ public class Main extends Application {
         menu.getChildren().addAll(new VBox(2, logo, tagline), faixaTricolor(), criarSeparador());
 
         adicionarSecao(menu, "INÍCIO");
-        adicionarBotaoMenu(menu, "Dashboard", "📊  Dashboard", dashboardView);
+        adicionarBotaoMenu(menu, "Dashboard", "Dashboard", "icon-dashboard", dashboardView);
 
         adicionarSecao(menu, "MOVIMENTAÇÕES");
-        adicionarBotaoMenu(menu, "Movimentações", "📥  Registrar entrada", movimentacoesView,
+        adicionarBotaoMenu(menu, "Movimentações", "Registrar entrada", "icon-entrada", movimentacoesView,
                 () -> movimentacoesView.mostrarRegistro(true));
-        adicionarBotaoMenu(menu, "Movimentações", "📤  Registrar saída", movimentacoesView,
+        adicionarBotaoMenu(menu, "Movimentações", "Registrar saída", "icon-saida", movimentacoesView,
                 () -> movimentacoesView.mostrarRegistro(false));
-        adicionarBotaoMenu(menu, "Movimentações", "🗒️  Histórico", movimentacoesView,
+        adicionarBotaoMenu(menu, "Movimentações", "Histórico", "icon-historico", movimentacoesView,
                 () -> movimentacoesView.mostrarHistorico());
 
         adicionarSecao(menu, "CONTAS A PAGAR");
-        adicionarBotaoMenu(menu, "Contas a pagar", "🧾  Contas a pagar", contasPagarView);
+        adicionarBotaoMenu(menu, "Contas a pagar", "Contas a pagar", "icon-pagar", contasPagarView);
 
         adicionarSecao(menu, "CONTAS A RECEBER");
-        adicionarBotaoMenu(menu, "Contas a receber", "💰  Contas a receber", contasReceberView);
+        adicionarBotaoMenu(menu, "Contas a receber", "Contas a receber", "icon-receber", contasReceberView);
 
         adicionarSecao(menu, "BANCOS E RELATÓRIOS");
-        adicionarBotaoMenu(menu, "Contas bancárias", "🏦  Contas bancárias", contasView);
-        adicionarBotaoMenu(menu, "Relatórios", "📈  Relatórios", relatoriosView);
+        adicionarBotaoMenu(menu, "Contas bancárias", "Contas bancárias", "icon-banco", contasView);
+        adicionarBotaoMenu(menu, "Relatórios", "Relatórios", "icon-relatorios", relatoriosView);
 
         adicionarSecao(menu, "CONFIGURAÇÕES");
-        adicionarBotaoMenu(menu, "Configurações", "🏷️  Categorias", configuracoesView,
+        adicionarBotaoMenu(menu, "Configurações", "Categorias", "icon-categorias", configuracoesView,
                 () -> configuracoesView.selecionarCategorias());
-        adicionarBotaoMenu(menu, "Configurações", "ℹ️  Sobre", configuracoesView,
+        adicionarBotaoMenu(menu, "Configurações", "Sobre", "icon-sobre", configuracoesView,
                 () -> configuracoesView.selecionarSobre());
 
         return menu;
@@ -140,15 +140,18 @@ public class Main extends Application {
         menu.getChildren().add(secao);
     }
 
-    private void adicionarBotaoMenu(VBox menu, String tituloPagina, String rotulo, Node view) {
-        adicionarBotaoMenu(menu, tituloPagina, rotulo, view, null);
+    private void adicionarBotaoMenu(VBox menu, String tituloPagina, String rotulo, String iconeClasse, Node view) {
+        adicionarBotaoMenu(menu, tituloPagina, rotulo, iconeClasse, view, null);
     }
 
-    private void adicionarBotaoMenu(VBox menu, String tituloPagina, String rotulo, Node view, Runnable extra) {
+    private void adicionarBotaoMenu(VBox menu, String tituloPagina, String rotulo, String iconeClasse, Node view,
+            Runnable extra) {
         Button botao = new Button(rotulo);
         botao.setMaxWidth(Double.MAX_VALUE);
         botao.setAlignment(Pos.CENTER_LEFT);
         botao.getStyleClass().add("menu-button");
+        botao.setGraphic(criarIconeMenu(iconeClasse));
+        botao.setGraphicTextGap(10);
         botao.setOnAction(e -> {
             navegar(tituloPagina, botao, view);
             if (extra != null) {
@@ -158,6 +161,15 @@ public class Main extends Application {
         botoesMenu.put(rotulo, botao);
         botaoPorView.putIfAbsent(view, botao);
         menu.getChildren().add(botao);
+    }
+
+    private Region criarIconeMenu(String iconeClasse) {
+        Region icone = new Region();
+        icone.getStyleClass().addAll("menu-icon", iconeClasse);
+        icone.setMinSize(16, 16);
+        icone.setPrefSize(16, 16);
+        icone.setMaxSize(16, 16);
+        return icone;
     }
 
     // =========================================================

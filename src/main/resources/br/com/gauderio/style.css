@@ -69,9 +69,18 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.menu-button .menu-icon {
+    -fx-background-color: #8fa1b3;
+    -fx-scale-shape: false;
+}
+
 .menu-button:hover {
     -fx-background-color: #243142;
     -fx-text-fill: white;
+}
+
+.menu-button:hover .menu-icon {
+    -fx-background-color: white;
 }
 
 .menu-button:pressed {
@@ -83,6 +92,21 @@
     -fx-text-fill: white;
     -fx-effect: dropshadow(gaussian, rgba(14,122,60,0.35), 10, 0, 0, 2);
 }
+
+.menu-button.active .menu-icon {
+    -fx-background-color: white;
+}
+
+.icon-dashboard { -fx-shape: "M1 1 H7 V7 H1 Z M9 1 H15 V7 H9 Z M1 9 H7 V15 H1 Z M9 9 H15 V15 H9 Z"; }
+.icon-entrada { -fx-shape: "M8 1 V10 M4 6 L8 10 L12 6 M2 13 H14 V15 H2 Z"; }
+.icon-saida { -fx-shape: "M2 1 H14 V3 H2 Z M4 6 L8 2 L12 6 M8 2 V12 M2 13 H14 V15 H2 Z"; }
+.icon-historico { -fx-shape: "M2 2 H14 V5 H2 Z M2 7 H14 V10 H2 Z M2 12 H14 V15 H2 Z"; }
+.icon-pagar { -fx-shape: "M3 1 H13 V15 H3 Z M5 5 H11 V7 H5 Z M5 9 H11 V11 H5 Z"; }
+.icon-receber { -fx-shape: "M1 4 H15 V12 H1 Z M9 6 A2 2 0 1 1 8.99 6 Z M4 2 H12 V4 H4 Z"; }
+.icon-banco { -fx-shape: "M1 5 L8 1 L15 5 V7 H1 Z M2 8 H4 V14 H2 Z M6 8 H8 V14 H6 Z M10 8 H12 V14 H10 Z M14 8 H16 V14 H14 Z M1 14 H15 V15 H1 Z"; }
+.icon-relatorios { -fx-shape: "M1 13 H4 V7 H1 Z M6 13 H9 V3 H6 Z M11 13 H14 V9 H11 Z M1 15 H14 V16 H1 Z"; }
+.icon-categorias { -fx-shape: "M1 7 L7 1 H15 V9 L9 15 H1 Z M10 5 A1 1 0 1 1 9.99 5 Z"; }
+.icon-sobre { -fx-shape: "M8 1 A7 7 0 1 1 7.99 1 Z M7 6 H9 V11 H7 Z M7 4 H9 V5 H7 Z"; }
 
 /* ============================================================
    CABEÇALHO
@@ -402,52 +426,6 @@
 }
 
 /* ============================================================
-   ABAS DA CENTRAL DE BOLETOS
-   ============================================================ */
-
-.boletos-tabs {
-    -fx-tab-min-height: 38px;
-}
-
-.boletos-tabs .tab-header-area {
-    -fx-padding: 0 0 10px 0;
-}
-
-.boletos-tabs .tab-header-background {
-    -fx-background-color: transparent;
-}
-
-.boletos-tabs .tab {
-    -fx-background-color: #eef2f6;
-    -fx-background-radius: 10px 10px 0 0;
-    -fx-padding: 7px 16px;
-}
-
-.boletos-tabs .tab:hover {
-    -fx-background-color: #e3e9ef;
-}
-
-.boletos-tabs .tab .tab-label {
-    -fx-text-fill: #4f6070;
-    -fx-font-weight: bold;
-}
-
-.boletos-tabs .tab:selected {
-    -fx-background-color: white;
-    -fx-border-color: #0E7A3C #0E7A3C transparent #0E7A3C;
-    -fx-border-width: 2px 2px 0 2px;
-}
-
-.boletos-tabs .tab:selected .tab-label {
-    -fx-text-fill: #0E7A3C;
-}
-
-.boletos-tabs .tab-content-area {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-}
-
-/* ============================================================
    SEÇÕES DO MENU LATERAL
    ============================================================ */
 
@@ -459,49 +437,67 @@
 }
 
 /* ============================================================
-   ABAS PADRÃO DAS TELAS (Movimentações, Configurações, Contas)
+   ABAS (boletos e padrão)
    ============================================================ */
 
+.boletos-tabs,
 .conta-tabs {
-    -fx-tab-min-height: 36px;
+    -fx-tab-min-height: 40px;
 }
 
+.boletos-tabs .tab-header-area,
 .conta-tabs .tab-header-area {
-    -fx-padding: 0 0 10px 0;
+    -fx-padding: 0;
 }
 
+.boletos-tabs .tab-header-background,
 .conta-tabs .tab-header-background {
     -fx-background-color: transparent;
 }
 
+.boletos-tabs .tab,
 .conta-tabs .tab {
-    -fx-background-color: #eef2f6;
-    -fx-background-radius: 10px 10px 0 0;
-    -fx-padding: 7px 16px;
+    -fx-background-color: #e9eff5;
+    -fx-background-radius: 12px 12px 0 0;
+    -fx-padding: 8px 18px;
 }
 
+.boletos-tabs .tab:hover,
 .conta-tabs .tab:hover {
-    -fx-background-color: #e3e9ef;
+    -fx-background-color: #dde6ef;
 }
 
+.boletos-tabs .tab .tab-label,
 .conta-tabs .tab .tab-label {
     -fx-text-fill: #4f6070;
     -fx-font-weight: bold;
 }
 
+.boletos-tabs .tab:selected,
 .conta-tabs .tab:selected {
     -fx-background-color: white;
-    -fx-border-color: #0E7A3C #0E7A3C transparent #0E7A3C;
-    -fx-border-width: 2px 2px 0 2px;
+    -fx-border-color: #d6dde5 #d6dde5 transparent #d6dde5;
+    -fx-border-width: 1px 1px 0 1px;
+    -fx-border-radius: 12px 12px 0 0;
 }
 
+.boletos-tabs .tab:selected .tab-label,
 .conta-tabs .tab:selected .tab-label {
     -fx-text-fill: #0E7A3C;
 }
 
+.boletos-tabs:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator,
+.conta-tabs:focused > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+.boletos-tabs .tab-content-area,
 .conta-tabs .tab-content-area {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
+    -fx-background-color: white;
+    -fx-background-radius: 0 12px 12px 12px;
+    -fx-border-color: #d6dde5;
+    -fx-border-radius: 0 12px 12px 12px;
+    -fx-padding: 14px;
 }
 
 /* ============================================================
