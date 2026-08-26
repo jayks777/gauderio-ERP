@@ -19,6 +19,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class FormularioMovimentacao extends VBox {
     private static final String A_PAGAR_DEPOIS = "A pagar depois";
 
     private final ComboBox<String> tipoCombo = new ComboBox<>(
-            FXCollections.observableArrayList("Entrada", "Saída"));
+            FXCollections.observableArrayList("Saída", "Entrada"));
     private final TextField descricaoField = new TextField();
     private final TextField valorField = new TextField();
     private final ComboBox<Categoria> categoriaCombo = new ComboBox<>();
@@ -113,7 +114,7 @@ public class FormularioMovimentacao extends VBox {
         recorrenteCheck.selectedProperty().addListener((obs, a, b) -> atualizarVisibilidadeRecorrencia());
 
         recarregarContas();
-        tipoCombo.setValue("Entrada");
+        tipoCombo.setValue("Saída");
         frequenciaCombo.setValue("Mensal");
         recorrenteCheck.setSelected(false);
         atualizarVisibilidadeRecorrencia();
@@ -126,10 +127,10 @@ public class FormularioMovimentacao extends VBox {
     /** Tipo interno (RECEITA ou DESPESA), ou null se ainda não escolhido. */
     public String getTipo() {
         String t = tipoCombo.getValue();
-        if ("Entrada".equals(t)) {
+        if ("Saída".equals(t)) {
             return Transacao.TIPO_RECEITA;
         }
-        if ("Saída".equals(t)) {
+        if ("Entrada".equals(t)) {
             return Transacao.TIPO_DESPESA;
         }
         return null;
@@ -140,9 +141,9 @@ public class FormularioMovimentacao extends VBox {
         return A_RECEBER_DEPOIS.equals(v) || A_PAGAR_DEPOIS.equals(v);
     }
 
-    /** Pré-seleciona o tipo: true = Entrada, false = Saída. */
+    /** Pré-seleciona o tipo: true = Saída, false = Entrada. */
     public void setTipoPreferido(boolean entrada) {
-        tipoCombo.setValue(entrada ? "Entrada" : "Saída");
+        tipoCombo.setValue(entrada ? "Saída" : "Entrada");
     }
 
     /** Usado pelas telas de contas a pagar/receber para já nascer como pendência. */
@@ -214,6 +215,9 @@ public class FormularioMovimentacao extends VBox {
 
         Transacao t = new Transacao(tipo, descricao, 0, categoria, conta, data, vencimento, status,
                 recorrente, frequencia);
+        t.setCriadoEm(original != null && original.getCriadoEm() != null
+                ? original.getCriadoEm()
+                : LocalDateTime.now());
         try {
             t.setValor(Formatador.parseValor(valorField.getText()));
         } catch (NumberFormatException ignorado) {
@@ -236,9 +240,11 @@ public class FormularioMovimentacao extends VBox {
             Period salto = intervalo.multipliedBy(i);
             LocalDate data = base.getData().plus(salto);
             LocalDate venc = base.getVencimento() == null ? data : base.getVencimento().plus(salto);
-            lista.add(new Transacao(base.getTipo(), base.getDescricao(), base.getValor(),
+            Transacao parcela = new Transacao(base.getTipo(), base.getDescricao(), base.getValor(),
                     base.getCategoria(), base.getConta(), data, venc,
-                    Transacao.STATUS_PENDENTE, true, base.getFrequencia()));
+                    Transacao.STATUS_PENDENTE, true, base.getFrequencia());
+            parcela.setCriadoEm(base.getCriadoEm() != null ? base.getCriadoEm() : LocalDateTime.now());
+            lista.add(parcela);
         }
         return lista;
     }
@@ -249,7 +255,7 @@ public class FormularioMovimentacao extends VBox {
 
     public void preencherParaEdicao(Transacao t) {
         original = t;
-        tipoCombo.setValue(Transacao.TIPO_RECEITA.equals(t.getTipo()) ? "Entrada" : "Saída");
+        tipoCombo.setValue(Transacao.TIPO_RECEITA.equals(t.getTipo()) ? "Saída" : "Entrada");
         descricaoField.setText(t.getDescricao());
         valorField.setText(String.format("%.2f", t.getValor()).replace(".", ","));
         selectCategoria(t.getCategoria());
@@ -270,7 +276,7 @@ public class FormularioMovimentacao extends VBox {
 
     public void limpar() {
         original = null;
-        tipoCombo.setValue("Entrada");
+        tipoCombo.setValue("Saída");
         descricaoField.clear();
         valorField.clear();
         dataFuturaPicker.setValue(LocalDate.now().plusDays(7));

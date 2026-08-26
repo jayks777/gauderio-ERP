@@ -145,11 +145,11 @@ public class DashboardView extends VBox implements Refreshable {
         Label titulo = new Label("AÇÕES RÁPIDAS");
         titulo.getStyleClass().add("card-label");
 
-        Button btnEntrada = new Button("+ Registrar entrada");
+        Button btnEntrada = new Button("+ Registrar saída");
         btnEntrada.getStyleClass().addAll("btn", "btn-green");
         btnEntrada.setOnAction(e -> onRegistrarEntrada.run());
 
-        Button btnSaida = new Button("- Registrar saída");
+        Button btnSaida = new Button("- Registrar entrada");
         btnSaida.getStyleClass().addAll("btn", "btn-red");
         btnSaida.setOnAction(e -> onRegistrarSaida.run());
 
@@ -263,7 +263,7 @@ public class DashboardView extends VBox implements Refreshable {
                     setStyle("");
                 } else {
                     setText(item);
-                    setStyle("-fx-text-fill:" + ("Entrada".equals(item) ? "#0E7A3C" : "#C8102E")
+                    setStyle("-fx-text-fill:" + ("Saída".equals(item) ? "#0E7A3C" : "#C8102E")
                             + "; -fx-font-weight:bold;");
                 }
             }

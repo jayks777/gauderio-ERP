@@ -1,6 +1,7 @@
 package br.com.gauderio.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Lançamento financeiro: receita ou despesa.
@@ -26,6 +27,8 @@ public class Transacao {
     private String status;
     private boolean recorrente;
     private String frequencia;
+    /** Data/hora em que o lançamento foi criado (não alterado em edições). */
+    private LocalDateTime criadoEm;
 
     public Transacao() {
     }
@@ -58,9 +61,9 @@ public class Transacao {
         return status;
     }
 
-    /** Texto amigável do tipo, no dia a dia: Entrada ou Saída. */
+    /** Texto amigável do tipo, no dia a dia: Saída ou Entrada. */
     public String getTipoTexto() {
-        return TIPO_RECEITA.equals(tipo) ? "Entrada" : "Saída";
+        return TIPO_RECEITA.equals(tipo) ? "Saída" : "Entrada";
     }
 
     /** Situação com linguagem simples e contextual: Pendente, Paga, Recebida ou Vencida. */
@@ -112,4 +115,7 @@ public class Transacao {
 
     public String getFrequencia() { return frequencia; }
     public void setFrequencia(String frequencia) { this.frequencia = frequencia; }
+
+    public LocalDateTime getCriadoEm() { return criadoEm; }
+    public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
 }

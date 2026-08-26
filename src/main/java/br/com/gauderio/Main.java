@@ -108,9 +108,9 @@ public class Main extends Application {
         adicionarBotaoMenu(menu, "Dashboard", "Dashboard", "icon-dashboard", dashboardView);
 
         adicionarSecao(menu, "MOVIMENTAÇÕES");
-        adicionarBotaoMenu(menu, "Movimentações", "Registrar entrada", "icon-entrada", movimentacoesView,
-                () -> movimentacoesView.mostrarRegistro(true));
         adicionarBotaoMenu(menu, "Movimentações", "Registrar saída", "icon-saida", movimentacoesView,
+                () -> movimentacoesView.mostrarRegistro(true));
+        adicionarBotaoMenu(menu, "Movimentações", "Registrar entrada", "icon-entrada", movimentacoesView,
                 () -> movimentacoesView.mostrarRegistro(false));
         adicionarBotaoMenu(menu, "Movimentações", "Histórico", "icon-historico", movimentacoesView,
                 () -> movimentacoesView.mostrarHistorico());

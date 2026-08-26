@@ -49,7 +49,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
     private final Tab abaHistorico = new Tab("Histórico");
 
     private final ComboBox<String> filtroTipo = new ComboBox<>(
-            FXCollections.observableArrayList("Todas", "Entrada", "Saída"));
+            FXCollections.observableArrayList("Todas", "Saída", "Entrada"));
     private final ComboBox<String> filtroPeriodo = new ComboBox<>(
             FXCollections.observableArrayList("Todos", "Este mês", "Mês anterior", "Últimos 12 meses"));
 
@@ -87,7 +87,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         aplicarFiltros();
     }
 
-    /** Abre a aba de registro já com o tipo escolhido (Entrada = true). */
+    /** Abre a aba de registro já com o tipo escolhido (Saída = true). */
     public void mostrarRegistro(boolean entrada) {
         idEmEdicao = -1;
         lblTituloForm.setText("Nova movimentação");
@@ -106,11 +106,11 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
     // CABEÇALHO
     // =========================================================
     private BorderPane criarCabecalho() {
-        Button btnEntrada = new Button("+ Registrar entrada");
+        Button btnEntrada = new Button("+ Registrar saída");
         btnEntrada.getStyleClass().addAll("btn", "btn-green");
         btnEntrada.setOnAction(e -> mostrarRegistro(true));
 
-        Button btnSaida = new Button("- Registrar saída");
+        Button btnSaida = new Button("- Registrar entrada");
         btnSaida.getStyleClass().addAll("btn", "btn-red");
         btnSaida.setOnAction(e -> mostrarRegistro(false));
 
@@ -231,7 +231,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
                     setStyle("");
                 } else {
                     setText(item);
-                    setStyle("-fx-text-fill:" + ("Entrada".equals(item) ? "#0E7A3C" : "#C8102E")
+                    setStyle("-fx-text-fill:" + ("Saída".equals(item) ? "#0E7A3C" : "#C8102E")
                             + "; -fx-font-weight:bold;");
                 }
             }
@@ -334,7 +334,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
             } else {
                 transacaoDAO.insert(lista.get(0));
                 boolean entrada = Transacao.TIPO_RECEITA.equals(lista.get(0).getTipo());
-                alerta(entrada ? "Entrada registrada com sucesso." : "Saída registrada com sucesso.",
+                alerta(entrada ? "Saída registrada com sucesso." : "Entrada registrada com sucesso.",
                         Alert.AlertType.INFORMATION);
             }
             form.limpar();
@@ -461,7 +461,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         List<Transacao> resultado = new ArrayList<>();
         for (Transacao t : todos) {
             if (!"Todas".equals(tipo)) {
-                String tipoFiltro = "Entrada".equals(tipo) ? Transacao.TIPO_RECEITA : Transacao.TIPO_DESPESA;
+                String tipoFiltro = "Saída".equals(tipo) ? Transacao.TIPO_RECEITA : Transacao.TIPO_DESPESA;
                 if (!tipoFiltro.equals(t.getTipo())) {
                     continue;
                 }

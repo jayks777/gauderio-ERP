@@ -46,7 +46,7 @@ public class ContasView extends BorderPane implements Refreshable {
     private final Label lblContaMov = new Label("Selecione uma conta na lista");
 
     private final ComboBox<String> tipoMovCombo = new ComboBox<>(
-            FXCollections.observableArrayList("Entrada (aumenta o saldo)", "Saída (diminui o saldo)"));
+            FXCollections.observableArrayList("Saída (aumenta o saldo)", "Entrada (diminui o saldo)"));
     private final TextField descMovField = new TextField();
     private final TextField valorMovField = new TextField();
 
@@ -80,7 +80,7 @@ public class ContasView extends BorderPane implements Refreshable {
         VBox area = new VBox(16, cabecalho, linhaContas, linhaMov);
         setCenter(area);
 
-        tipoMovCombo.setValue("Entrada (aumenta o saldo)");
+        tipoMovCombo.setValue("Saída (aumenta o saldo)");
         atualizarSobre();
     }
 
@@ -288,7 +288,7 @@ public class ContasView extends BorderPane implements Refreshable {
         lblContaMov.getStyleClass().add("form-hint");
 
         Label ajudaAjuste = new Label("Use esta opção somente quando o saldo mostrado pelo sistema for "
-                + "diferente do saldo real da conta. Para registrar entradas e saídas normais, use Movimentações.");
+                + "diferente do saldo real da conta. Para registrar saídas e entradas normais, use Movimentações.");
         ajudaAjuste.getStyleClass().add("form-hint");
         ajudaAjuste.setWrapText(true);
         ajudaAjuste.setMaxWidth(290);
@@ -338,7 +338,7 @@ public class ContasView extends BorderPane implements Refreshable {
                     setStyle("");
                     return;
                 }
-                setText("ENTRADA".equals(tipo) ? "Entrada" : "Saída");
+                setText("ENTRADA".equals(tipo) ? "Saída" : "Entrada");
                 setStyle("ENTRADA".equals(tipo)
                         ? "-fx-text-fill:#0E7A3C; -fx-font-weight:bold;"
                         : "-fx-text-fill:#C8102E; -fx-font-weight:bold;");
@@ -393,7 +393,7 @@ public class ContasView extends BorderPane implements Refreshable {
 
         String valorCombo = tipoMovCombo.getValue();
         String tipo;
-        if ("Saída (diminui o saldo)".equals(valorCombo)) {
+        if ("Entrada (diminui o saldo)".equals(valorCombo)) {
             tipo = MovimentacaoSaldo.SAIDA;
         } else {
             tipo = MovimentacaoSaldo.ENTRADA;

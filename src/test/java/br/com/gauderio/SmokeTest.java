@@ -39,7 +39,7 @@ public class SmokeTest {
         tdao.insert(new Transacao(Transacao.TIPO_RECEITA, "Venda de produtos", 2500.00, "Vendas",
                 "Conta Corrente Banrisul", LocalDate.now(), null, Transacao.STATUS_PAGO, false, null));
         tdao.insert(new Transacao(Transacao.TIPO_DESPESA, "Energia elétrica", 320.10, "Energia elétrica",
-                "Conta Corrente Banrisul", LocalDate.now(), null, Transacao.STATUS_PAGO, false, null));
+                "Conta Corr9ente Banrisul", LocalDate.now(), null, Transacao.STATUS_PAGO, false, null));
         tdao.insert(new Transacao(Transacao.TIPO_DESPESA, "Parcela do financiamento", 890.00, "Impostos",
                 "Conta Corrente Banrisul", LocalDate.now(), LocalDate.now().plusDays(15), Transacao.STATUS_PENDENTE, true, "MENSAL"));
 

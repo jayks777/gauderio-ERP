@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,10 @@ public class TransacaoDAO {
         t.setStatus(rs.getString("status"));
         t.setRecorrente(rs.getInt("recorrente") == 1);
         t.setFrequencia(rs.getString("frequencia"));
+        String criado = rs.getString("criado_em");
+        if (criado != null && !criado.isBlank()) {
+            t.setCriadoEm(LocalDateTime.parse(criado));
+        }
         return t;
     }
 
@@ -81,12 +86,15 @@ public class TransacaoDAO {
     public int insert(Transacao t) {
         String sql = """
                 INSERT INTO transacoes
-                    (tipo, descricao, valor, categoria, conta, data, vencimento, status, recorrente, frequencia)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (tipo, descricao, valor, categoria, conta, data, vencimento, status, recorrente, frequencia, criado_em)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection c = Database.getConnection();
              PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             preencher(ps, t);
+            ps.setString(11, t.getCriadoEm() == null
+                    ? LocalDateTime.now().toString()
+                    : t.getCriadoEm().toString());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -105,8 +113,8 @@ public class TransacaoDAO {
         }
         String sql = """
                 INSERT INTO transacoes
-                    (tipo, descricao, valor, categoria, conta, data, vencimento, status, recorrente, frequencia)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (tipo, descricao, valor, categoria, conta, data, vencimento, status, recorrente, frequencia, criado_em)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection c = Database.getConnection()) {
             boolean antigo = c.getAutoCommit();
@@ -114,6 +122,9 @@ public class TransacaoDAO {
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 for (Transacao t : lancamentos) {
                     preencher(ps, t);
+                    ps.setString(11, t.getCriadoEm() == null
+                            ? LocalDateTime.now().toString()
+                            : t.getCriadoEm().toString());
                     ps.addBatch();
                 }
                 ps.executeBatch();
