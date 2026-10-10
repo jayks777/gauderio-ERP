@@ -8,9 +8,10 @@ import java.util.Locale;
 /** Utilitários de formatação (moeda e data) no padrão brasileiro. */
 public final class Formatador {
 
-    private static final Locale PT_BR = new Locale("pt", "BR");
+    private static final Locale PT_BR = Locale.of("pt", "BR");
     private static final NumberFormat MOEDA = NumberFormat.getCurrencyInstance(PT_BR);
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy", PT_BR);
+    private static final DateTimeFormatter MES_ANO = DateTimeFormatter.ofPattern("MMMM 'de' yyyy", PT_BR);
 
     private Formatador() {
     }
@@ -21,6 +22,12 @@ public final class Formatador {
 
     public static String data(LocalDate data) {
         return data == null ? "—" : DATA.format(data);
+    }
+
+    public static String mesAno(LocalDate data) {
+        if (data == null) return "—";
+        String s = MES_ANO.format(data);
+        return s.substring(0, 1).toUpperCase(PT_BR) + s.substring(1);
     }
 
     public static double parseValor(String texto) {

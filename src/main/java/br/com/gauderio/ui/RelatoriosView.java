@@ -2,40 +2,28 @@ package br.com.gauderio.ui;
 
 import br.com.gauderio.dao.TransacaoDAO;
 import br.com.gauderio.model.Transacao;
+import br.com.gauderio.util.ExportadorCsv;
 import br.com.gauderio.util.Formatador;
+import br.com.gauderio.util.IconeUtil;
 import br.com.gauderio.util.UiUtil;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.PieChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.chart.*;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Relatórios e gráficos financeiros, com resumo no topo e filtros
- * de período, ano e tipo — em linguagem simples.
+ * Relatórios e gráficos financeiros, com resumo no topo, filtros de período e exportação CSV.
  */
 public class RelatoriosView extends BorderPane implements Refreshable {
 
@@ -56,6 +44,10 @@ public class RelatoriosView extends BorderPane implements Refreshable {
     private final PieChart pizza = new PieChart();
     private final TableView<LinhaMensal> tabela = new TableView<>();
 
+    private double ultimoTotalReceitas = 0;
+    private double ultimoTotalDespesas = 0;
+    private double ultimoResultado = 0;
+
     public RelatoriosView() {
         setPadding(new Insets(24));
         getStyleClass().add("content");
@@ -64,21 +56,30 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         periodoCombo.setValue("Ano completo");
         tipoCombo.setValue("Todas");
 
-        Button atualizar = new Button("Gerar relatório");
+        Button atualizar = new Button("Gerar relatório", IconeUtil.iconeBotao(IconeUtil.PATH_BUSCA, "#ffffff"));
         atualizar.getStyleClass().addAll("btn", "btn-green");
         atualizar.setOnAction(e -> carregar());
+
+        Button btnExportar = new Button("Exportar relatório (CSV)", IconeUtil.iconeBotao(IconeUtil.PATH_EXPORTAR, "#41505c"));
+        btnExportar.getStyleClass().addAll("btn", "btn-outline");
+        btnExportar.setOnAction(e -> exportarCsv());
+
+        Region espaco = new Region();
+        HBox.setHgrow(espaco, Priority.ALWAYS);
 
         HBox filtros = new HBox(10,
                 new Label("Período:"), periodoCombo,
                 new Label("Ano:"), anoSpan,
                 new Label("Tipo:"), tipoCombo,
-                atualizar);
+                atualizar,
+                espaco,
+                btnExportar);
         filtros.setAlignment(Pos.CENTER_LEFT);
         filtros.getStyleClass().add("filter-bar");
 
         VBox cabecalho = new VBox(12,
-                UiUtil.cabecalho("Relatórios",
-                        "Veja quanto entrou e quanto saiu no período escolhido."),
+                UiUtil.cabecalho("Relatórios & Demonstrativos",
+                        "Acompanhe o desempenho das suas receitas e despesas ao longo do tempo."),
                 filtros,
                 criarResumo());
 
@@ -106,14 +107,14 @@ public class RelatoriosView extends BorderPane implements Refreshable {
     }
 
     private VBox criarResumo() {
-        Label rotuloResumo = new Label("RESUMO DO PERÍODO");
+        Label rotuloResumo = new Label("RESUMO CONSOLIDADO");
         rotuloResumo.getStyleClass().add("card-label");
 
         FlowPane cards = new FlowPane(14, 14);
         cards.getChildren().addAll(
-                criarCardResumo("Receitas", lblReceitas, "green"),
-                criarCardResumo("Despesas", lblDespesas, "red"),
-                criarCardResumo("Resultado", lblResultado, "yellow"));
+                criarCardResumo("Total de Receitas", lblReceitas, "green"),
+                criarCardResumo("Total de Despesas", lblDespesas, "red"),
+                criarCardResumo("Resultado Líquido", lblResultado, "yellow"));
         cards.setAlignment(Pos.CENTER_LEFT);
         return new VBox(6, rotuloResumo, cards);
     }
@@ -122,7 +123,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         VBox card = new VBox(10);
         card.getStyleClass().add("card");
         card.setPadding(new Insets(0));
-        card.setPrefWidth(220);
+        card.setPrefWidth(240);
 
         Region faixa = new Region();
         faixa.setPrefHeight(6);
@@ -139,9 +140,6 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         return card;
     }
 
-    // =========================================================
-    // CARREGAMENTO DOS DADOS
-    // =========================================================
     private VBox wrapCard(javafx.scene.Node node) {
         VBox card = new VBox(node);
         card.getStyleClass().add("card");
@@ -193,11 +191,15 @@ public class RelatoriosView extends BorderPane implements Refreshable {
             porCategoria.merge(cat, t.getValor(), Double::sum);
         }
 
+        ultimoTotalReceitas = totalReceitas;
+        ultimoTotalDespesas = totalDespesas;
+        ultimoResultado = totalReceitas - totalDespesas;
+
         lblReceitas.setText(Formatador.moeda(totalReceitas));
         lblDespesas.setText(Formatador.moeda(totalDespesas));
-        lblResultado.setText(Formatador.moeda(totalReceitas - totalDespesas));
-        lblResultado.setStyle(totalReceitas - totalDespesas >= 0
-                ? "-fx-text-fill:#0E7A3C;" : "-fx-text-fill:#C8102E;");
+        lblResultado.setText(Formatador.moeda(ultimoResultado));
+        lblResultado.setStyle(ultimoResultado >= 0
+                ? "-fx-text-fill:#0E7A3C; -fx-font-weight: bold;" : "-fx-text-fill:#C8102E; -fx-font-weight: bold;");
 
         barra.getData().clear();
         XYChart.Series<String, Number> serieReceitas = new XYChart.Series<>();
@@ -208,7 +210,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
             serieReceitas.getData().add(new XYChart.Data<>(meses[i], receitas[i]));
             serieDespesas.getData().add(new XYChart.Data<>(meses[i], despesas[i]));
         }
-        barra.getData().addAll(serieReceitas, serieDespesas);
+        barra.getData().addAll(List.of(serieReceitas, serieDespesas));
 
         linha.getData().clear();
         XYChart.Series<String, Number> serieAcumulo = new XYChart.Series<>();
@@ -229,7 +231,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
                     pizza.getData().add(new PieChart.Data(categoria + " (" + Formatador.moeda(valor) + ")", valor)));
         }
 
-        List<LinhaMensal> linhas = new java.util.ArrayList<>();
+        List<LinhaMensal> linhas = new ArrayList<>();
         double acum = 0;
         for (int i = 0; i < 12; i++) {
             acum += receitas[i] - despesas[i];
@@ -237,6 +239,33 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         }
         tabela.getItems().setAll(linhas);
         tabela.refresh();
+    }
+
+    private void exportarCsv() {
+        List<LinhaMensal> linhas = tabela.getItems();
+        if (linhas == null || linhas.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Gere o relatório antes de exportar.");
+            alert.setHeaderText(null);
+            alert.showAndWait();
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Exportar relatório financeiro");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Planilha CSV (*.csv)", "*.csv"));
+        chooser.setInitialFileName("relatorio-financeiro-" + anoSpan.getValue() + ".csv");
+        File arquivo = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow());
+        if (arquivo != null) {
+            try {
+                ExportadorCsv.exportarRelatorioMensal(anoSpan.getValue(), linhas, ultimoTotalReceitas, ultimoTotalDespesas, ultimoResultado, arquivo);
+                Alert a = new Alert(Alert.AlertType.INFORMATION, "Relatório exportado com sucesso em:\n" + arquivo.getAbsolutePath());
+                a.setHeaderText(null);
+                a.showAndWait();
+            } catch (Exception ex) {
+                Alert a = new Alert(Alert.AlertType.ERROR, "Erro ao exportar relatório: " + ex.getMessage());
+                a.setHeaderText(null);
+                a.showAndWait();
+            }
+        }
     }
 
     // =========================================================
@@ -248,7 +277,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         card.setPadding(new Insets(14));
         card.setPrefWidth(520);
 
-        Label titulo = new Label("Mês a mês");
+        Label titulo = new Label("Detalhamento mês a mês");
         titulo.getStyleClass().add("card-label");
 
         TableColumn<LinhaMensal, String> cMes = new TableColumn<>("Mês");
@@ -259,6 +288,7 @@ public class RelatoriosView extends BorderPane implements Refreshable {
         TableColumn<LinhaMensal, Double> cRes = colunaMoeda("Resultado", "resultado");
         TableColumn<LinhaMensal, Double> cAcum = colunaMoeda("Acumulado", "acumulado");
 
+        tabela.getColumns().clear();
         tabela.getColumns().add(cMes);
         tabela.getColumns().add(cRec);
         tabela.getColumns().add(cDesp);
@@ -278,10 +308,10 @@ public class RelatoriosView extends BorderPane implements Refreshable {
             @Override
             protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty ? "" : Formatador.moeda(item));
-                setStyle(empty ? "" : (item != null && item >= 0
-                        ? "-fx-text-fill:#0E7A3C;"
-                        : "-fx-text-fill:#C8102E;"));
+                setText(empty || item == null ? "" : Formatador.moeda(item));
+                setStyle(empty || item == null ? "" : (item >= 0
+                        ? "-fx-text-fill:#0E7A3C; -fx-font-weight:bold;"
+                        : "-fx-text-fill:#C8102E; -fx-font-weight:bold;"));
             }
         });
         return col;

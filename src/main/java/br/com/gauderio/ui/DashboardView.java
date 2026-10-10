@@ -4,16 +4,13 @@ import br.com.gauderio.dao.ContaDAO;
 import br.com.gauderio.dao.TransacaoDAO;
 import br.com.gauderio.model.Transacao;
 import br.com.gauderio.util.Formatador;
+import br.com.gauderio.util.IconeUtil;
 import br.com.gauderio.util.UiUtil;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -22,13 +19,14 @@ import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Dashboard: principal central de operação.
- * Mostra, com clareza: saldo disponível, entradas/saídas do mês, resultado,
- * valores a receber/pagar, contas vencidas, ações rápidas, próximos vencimentos
- * e últimas movimentações.
+ * Dashboard: principal central de operações do Gauderio-ERP.
+ * Mostra, com clareza imediata: saldo disponível, receitas e despesas do mês,
+ * resultado do período, contas a pagar e receber, contas em atraso, ações rápidas,
+ * próximos vencimentos e histórico recente.
  */
 public class DashboardView extends VBox implements Refreshable {
 
@@ -40,23 +38,15 @@ public class DashboardView extends VBox implements Refreshable {
     private final Runnable onContasReceber;
 
     public DashboardView() {
-        this(() -> {
-        }, () -> {
-        }, () -> {
-        }, () -> {
-        });
+        this(() -> {}, () -> {}, () -> {}, () -> {});
     }
 
     public DashboardView(Runnable onRegistrarEntrada, Runnable onRegistrarSaida,
                          Runnable onContasPagar, Runnable onContasReceber) {
-        this.onRegistrarEntrada = onRegistrarEntrada == null ? () -> {
-        } : onRegistrarEntrada;
-        this.onRegistrarSaida = onRegistrarSaida == null ? () -> {
-        } : onRegistrarSaida;
-        this.onContasPagar = onContasPagar == null ? () -> {
-        } : onContasPagar;
-        this.onContasReceber = onContasReceber == null ? () -> {
-        } : onContasReceber;
+        this.onRegistrarEntrada = onRegistrarEntrada == null ? () -> {} : onRegistrarEntrada;
+        this.onRegistrarSaida = onRegistrarSaida == null ? () -> {} : onRegistrarSaida;
+        this.onContasPagar = onContasPagar == null ? () -> {} : onContasPagar;
+        this.onContasReceber = onContasReceber == null ? () -> {} : onContasReceber;
         setPadding(new Insets(24));
         setSpacing(18);
         getStyleClass().add("content");
@@ -81,22 +71,30 @@ public class DashboardView extends VBox implements Refreshable {
         double saldoContas = contaDAO.saldoGeral();
         double aReceber = transacaoDAO.somaPendente(Transacao.TIPO_RECEITA);
         double aPagar = transacaoDAO.somaPendente(Transacao.TIPO_DESPESA);
-        double vencido = transacaoDAO.somaVencido(Transacao.TIPO_RECEITA) + transacaoDAO.somaVencido(Transacao.TIPO_DESPESA);
-        long qtdVencidas = transacaoDAO.pendentes().stream().filter(Transacao::isVencida).count();
+        double vencidasPagar = transacaoDAO.somaVencido(Transacao.TIPO_DESPESA);
+        double vencidasReceber = transacaoDAO.somaVencido(Transacao.TIPO_RECEITA);
 
-        VBox cabecalho = UiUtil.cabecalho("Dashboard", "Visão geral das finanças · " + Formatador.data(hoje));
+        long qtdVencidasPagar = transacaoDAO.pendentes().stream()
+                .filter(Transacao::isDespesa)
+                .filter(Transacao::isVencida)
+                .count();
+
+        VBox cabecalho = UiUtil.cabecalho("Dashboard",
+                "Visão geral das finanças da sua empresa · " + Formatador.mesAno(hoje));
+
+        double resultado = receitasMes - despesasMes;
+        String descResultado = resultado >= 0 ? "Superávit (Receitas > Despesas)" : "Déficit (Despesas > Receitas)";
 
         FlowPane cards = new FlowPane(14, 14);
         cards.getChildren().addAll(
-                criarCard("Saldo disponível", Formatador.moeda(saldoContas), "blue", null),
-                criarCard("Receitas do mês", Formatador.moeda(receitasMes), "green", null),
-                criarCard("Despesas do mês", Formatador.moeda(despesasMes), "red", null),
-                criarCard("Resultado do mês", Formatador.moeda(receitasMes - despesasMes),
-                        receitasMes - despesasMes >= 0 ? "green" : "red", "Receitas - despesas no período"),
-                criarCard("A receber", Formatador.moeda(aReceber), "yellow", null),
-                criarCard("A pagar", Formatador.moeda(aPagar), "yellow", null),
-                criarCard("Contas vencidas", Formatador.moeda(vencido), "red",
-                        qtdVencidas + (qtdVencidas == 1 ? " conta vencida" : " contas vencidas")));
+                criarCard("Saldo disponível", Formatador.moeda(saldoContas), "blue", "Soma de todas as contas bancárias"),
+                criarCard("Receitas do mês", Formatador.moeda(receitasMes), "green", "Entradas recebidas em " + Formatador.mesAno(hoje)),
+                criarCard("Despesas do mês", Formatador.moeda(despesasMes), "red", "Saídas pagas em " + Formatador.mesAno(hoje)),
+                criarCard("Resultado do mês", Formatador.moeda(resultado), resultado >= 0 ? "green" : "red", descResultado),
+                criarCard("A receber", Formatador.moeda(aReceber), "green", "Valores pendentes de recebimento"),
+                criarCard("A pagar", Formatador.moeda(aPagar), "yellow", "Contas pendentes de pagamento"),
+                criarCard("Atrasadas (a pagar)", Formatador.moeda(vencidasPagar), "red",
+                        qtdVencidasPagar + (qtdVencidasPagar == 1 ? " conta a pagar vencida" : " contas a pagar vencidas")));
 
         getChildren().addAll(cabecalho, cards, criarAcoesRapidas(), criarProximosVencimentos(), criarUltimas());
     }
@@ -108,7 +106,7 @@ public class DashboardView extends VBox implements Refreshable {
         VBox card = new VBox(8);
         card.getStyleClass().add("card");
         card.setPadding(new Insets(0));
-        card.setPrefWidth(235);
+        card.setPrefWidth(240);
 
         Region faixa = new Region();
         faixa.setPrefHeight(6);
@@ -145,19 +143,19 @@ public class DashboardView extends VBox implements Refreshable {
         Label titulo = new Label("AÇÕES RÁPIDAS");
         titulo.getStyleClass().add("card-label");
 
-        Button btnEntrada = new Button("+ Registrar saída");
+        Button btnEntrada = new Button("+ Registrar entrada", IconeUtil.iconeBotao(IconeUtil.PATH_ENTRADA, "#ffffff"));
         btnEntrada.getStyleClass().addAll("btn", "btn-green");
         btnEntrada.setOnAction(e -> onRegistrarEntrada.run());
 
-        Button btnSaida = new Button("- Registrar entrada");
+        Button btnSaida = new Button("- Registrar saída", IconeUtil.iconeBotao(IconeUtil.PATH_SAIDA, "#ffffff"));
         btnSaida.getStyleClass().addAll("btn", "btn-red");
         btnSaida.setOnAction(e -> onRegistrarSaida.run());
 
-        Button btnPagar = new Button("Contas a pagar");
+        Button btnPagar = new Button("Contas a pagar", IconeUtil.iconeBotao(IconeUtil.PATH_PAGAR, "#41505c"));
         btnPagar.getStyleClass().addAll("btn", "btn-outline");
         btnPagar.setOnAction(e -> onContasPagar.run());
 
-        Button btnReceber = new Button("Contas a receber");
+        Button btnReceber = new Button("Contas a receber", IconeUtil.iconeBotao(IconeUtil.PATH_RECEBER, "#41505c"));
         btnReceber.getStyleClass().addAll("btn", "btn-outline");
         btnReceber.setOnAction(e -> onContasReceber.run());
 
@@ -176,17 +174,62 @@ public class DashboardView extends VBox implements Refreshable {
         card.getStyleClass().add("card");
         card.setPadding(new Insets(14));
 
-        Label titulo = new Label("PRÓXIMOS VENCIMENTOS");
+        Label titulo = new Label("PRÓXIMOS VENCIMENTOS (7 DIAS)");
         titulo.getStyleClass().add("card-label");
 
-        List<Transacao> proximos = transacaoDAO.proximosVencimentos(LocalDate.now().plusDays(7), 6);
+        List<Transacao> proximos = transacaoDAO.proximosVencimentos(LocalDate.now().plusDays(7), 8);
 
         TableView<Transacao> tabela = new TableView<>();
-        tabela.setMaxHeight(240);
+        tabela.setMaxHeight(250);
 
         TableColumn<Transacao, String> cVenc = new TableColumn<>("Vencimento");
         cVenc.setCellValueFactory(d -> new ReadOnlyStringWrapper(Formatador.data(d.getValue().getDataReferencia())));
-        cVenc.setMinWidth(110);
+        cVenc.setMinWidth(100);
+
+        TableColumn<Transacao, String> cPrazo = new TableColumn<>("Prazo");
+        cPrazo.setCellValueFactory(d -> {
+            LocalDate ref = d.getValue().getDataReferencia();
+            long dias = ChronoUnit.DAYS.between(LocalDate.now(), ref);
+            if (dias == 0) return new ReadOnlyStringWrapper("Hoje");
+            if (dias > 0) return new ReadOnlyStringWrapper("Em " + dias + " d");
+            return new ReadOnlyStringWrapper(Math.abs(dias) + " d atraso");
+        });
+        cPrazo.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("");
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if (item.contains("atraso") || item.equals("Hoje")) {
+                        setStyle("-fx-text-fill: #C8102E; -fx-font-weight: bold;");
+                    } else {
+                        setStyle("-fx-text-fill: #5b6c7a;");
+                    }
+                }
+            }
+        });
+        cPrazo.setMinWidth(90);
+
+        TableColumn<Transacao, String> cTipo = new TableColumn<>("Tipo");
+        cTipo.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getTipoTexto()));
+        cTipo.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("");
+                    setStyle("");
+                } else {
+                    boolean entrada = "Entrada".equalsIgnoreCase(item);
+                    setText(entrada ? "▲ Entrada" : "▼ Saída");
+                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E") + "; -fx-font-weight:bold;");
+                }
+            }
+        });
+        cTipo.setMinWidth(95);
 
         TableColumn<Transacao, String> cDesc = new TableColumn<>("Descrição");
         cDesc.setCellValueFactory(new PropertyValueFactory<>("descricao"));
@@ -198,25 +241,60 @@ public class DashboardView extends VBox implements Refreshable {
             @Override
             protected void updateItem(Double item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? "" : Formatador.moeda(item));
+                Transacao t = getTableRow() == null ? null : getTableRow().getItem();
+                if (empty || item == null) {
+                    setText("");
+                    setStyle("");
+                } else {
+                    setText(Formatador.moeda(item));
+                    boolean entrada = t != null && t.isReceita();
+                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E") + "; -fx-font-weight:bold;");
+                }
             }
         });
         cValor.setMinWidth(120);
 
         TableColumn<Transacao, String> cSituacao = new TableColumn<>("Situação");
         cSituacao.setCellValueFactory(d -> new ReadOnlyStringWrapper(d.getValue().getStatusTexto()));
+        cSituacao.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText("");
+                    setStyle("");
+                    return;
+                }
+                setText(item);
+                String cor = switch (item) {
+                    case "Paga", "Recebida" -> "#0E7A3C";
+                    case "Vencida" -> "#C8102E";
+                    default -> "#B7791F";
+                };
+                String bg = switch (item) {
+                    case "Paga", "Recebida" -> "#eafaf1";
+                    case "Vencida" -> "#fde8e8";
+                    default -> "#fef5e7";
+                };
+                setStyle("-fx-text-fill:" + cor
+                        + "; -fx-background-color:" + bg
+                        + "; -fx-background-radius: 12px; -fx-padding: 3px 8px; -fx-font-weight:bold; -fx-alignment: center;");
+            }
+        });
         cSituacao.setMinWidth(100);
 
         tabela.getColumns().add(cVenc);
+        tabela.getColumns().add(cPrazo);
+        tabela.getColumns().add(cTipo);
         tabela.getColumns().add(cDesc);
-        tabela.getColumns().add(cSituacao);
         tabela.getColumns().add(cValor);
+        tabela.getColumns().add(cSituacao);
         tabela.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tabela.getItems().setAll(proximos);
 
         card.getChildren().add(titulo);
         if (proximos.isEmpty()) {
-            Label vazio = new Label("Nenhuma conta vence nos próximos 7 dias.");
+            Label vazio = new Label("Nenhuma conta vence nos próximos 7 dias. Tudo em dia!");
             vazio.getStyleClass().add("empty-text");
             card.getChildren().add(vazio);
         } else {
@@ -233,7 +311,7 @@ public class DashboardView extends VBox implements Refreshable {
         card.getStyleClass().add("card");
         card.setPadding(new Insets(14));
 
-        Label titulo = new Label("ÚLTIMAS MOVIMENTAÇÕES");
+        Label titulo = new Label("ÚLTIMAS MOVIMENTAÇÕES REGISTRADAS");
         titulo.getStyleClass().add("card-label");
 
         List<Transacao> ultimas = transacaoDAO.ultimos(10);
@@ -262,17 +340,18 @@ public class DashboardView extends VBox implements Refreshable {
                     setText("");
                     setStyle("");
                 } else {
-                    setText(item);
-                    setStyle("-fx-text-fill:" + ("Saída".equals(item) ? "#0E7A3C" : "#C8102E")
+                    boolean entrada = "Entrada".equalsIgnoreCase(item);
+                    setText(entrada ? "▲ Entrada" : "▼ Saída");
+                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E")
                             + "; -fx-font-weight:bold;");
                 }
             }
         });
-        cTipo.setMinWidth(80);
+        cTipo.setMinWidth(95);
 
         TableColumn<Transacao, String> cDesc = new TableColumn<>("Descrição");
         cDesc.setCellValueFactory(new PropertyValueFactory<>("descricao"));
-        cDesc.setMinWidth(220);
+        cDesc.setMinWidth(240);
 
         TableColumn<Transacao, Double> cValor = new TableColumn<>("Valor");
         cValor.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getValor()));
@@ -286,8 +365,8 @@ public class DashboardView extends VBox implements Refreshable {
                     setStyle("");
                 } else {
                     setText(Formatador.moeda(item));
-                    boolean entrada = t != null && Transacao.TIPO_RECEITA.equals(t.getTipo());
-                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E") + ";");
+                    boolean entrada = t != null && t.isReceita();
+                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E") + "; -fx-font-weight:bold;");
                 }
             }
         });
@@ -308,9 +387,16 @@ public class DashboardView extends VBox implements Refreshable {
                 String cor = switch (item) {
                     case "Paga", "Recebida" -> "#0E7A3C";
                     case "Vencida" -> "#C8102E";
-                    default -> "#9A6B00";
+                    default -> "#B7791F";
                 };
-                setStyle("-fx-text-fill:" + cor + "; -fx-font-weight:bold;");
+                String bg = switch (item) {
+                    case "Paga", "Recebida" -> "#eafaf1";
+                    case "Vencida" -> "#fde8e8";
+                    default -> "#fef5e7";
+                };
+                setStyle("-fx-text-fill:" + cor
+                        + "; -fx-background-color:" + bg
+                        + "; -fx-background-radius: 12px; -fx-padding: 3px 8px; -fx-font-weight:bold; -fx-alignment: center;");
             }
         });
         cSituacao.setMinWidth(100);

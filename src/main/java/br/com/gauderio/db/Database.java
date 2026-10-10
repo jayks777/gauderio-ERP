@@ -20,6 +20,9 @@ public final class Database {
 
     private static final String APP_DIRECTORY = "Gauderio-ERP";
 
+    /** Permite isolar o banco em testes e instalações controladas. */
+    public static final String DATA_DIRECTORY_PROPERTY = "gauderio.data.dir";
+
     private static final Path DATA_DIRECTORY = resolveDataDirectory();
 
     private static final Path DB_PATH =
@@ -53,6 +56,12 @@ public final class Database {
      * C:\Users\Usuario\.gauderio-erp
      */
     private static Path resolveDataDirectory() {
+
+        String configuredDirectory = System.getProperty(DATA_DIRECTORY_PROPERTY);
+
+        if (configuredDirectory != null && !configuredDirectory.isBlank()) {
+            return Paths.get(configuredDirectory).toAbsolutePath().normalize();
+        }
 
         String localAppData = System.getenv("LOCALAPPDATA");
 
@@ -101,6 +110,43 @@ public final class Database {
         }
 
         return conexao;
+    }
+
+    /**
+     * Força a escrita de quaisquer páginas pendentes (checkpoint) no arquivo principal.
+     */
+    public static synchronized void forcarCheckpoint() {
+        if (conexao != null) {
+            try (Statement st = conexao.createStatement()) {
+                st.execute("PRAGMA wal_checkpoint(FULL)");
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
+    /**
+     * Fecha a conexão com o banco de dados (necessário antes de restaurar backup).
+     */
+    public static synchronized void fecharConexao() {
+        if (conexao != null) {
+            try {
+                forcarCheckpoint();
+                if (!conexao.isClosed()) {
+                    conexao.close();
+                }
+            } catch (SQLException ignored) {
+            } finally {
+                conexao = null;
+            }
+        }
+    }
+
+    public static Path getDbFilePath() {
+        return DB_PATH;
+    }
+
+    public static Path getDataDirectory() {
+        return DATA_DIRECTORY;
     }
 
     /**

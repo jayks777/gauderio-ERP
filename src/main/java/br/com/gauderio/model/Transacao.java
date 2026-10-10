@@ -61,9 +61,17 @@ public class Transacao {
         return status;
     }
 
-    /** Texto amigável do tipo, no dia a dia: Saída ou Entrada. */
+    /** Texto amigável do tipo, no dia a dia: Entrada ou Saída. */
     public String getTipoTexto() {
-        return TIPO_RECEITA.equals(tipo) ? "Saída" : "Entrada";
+        return TIPO_RECEITA.equals(tipo) ? "Entrada" : "Saída";
+    }
+
+    public boolean isReceita() {
+        return TIPO_RECEITA.equals(tipo);
+    }
+
+    public boolean isDespesa() {
+        return TIPO_DESPESA.equals(tipo);
     }
 
     /** Situação com linguagem simples e contextual: Pendente, Paga, Recebida ou Vencida. */

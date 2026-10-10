@@ -66,7 +66,7 @@ public class Main extends Application {
         contasReceberView = new ContasParaView(true, onDadosAlterados);
         contasView = new ContasView(onDadosAlterados);
         relatoriosView = new RelatoriosView();
-        configuracoesView = new ConfiguracoesView();
+        configuracoesView = new ConfiguracoesView(onDadosAlterados);
 
         areaCentral = new BorderPane();
         areaCentral.setTop(criarCabecalho());
@@ -80,11 +80,23 @@ public class Main extends Application {
         scene.getStylesheets().add(
                 getClass().getResource("/br/com/gauderio/style.css").toExternalForm());
 
-        stage.setTitle("Gauderio-ERP · Finanças");
+        try (var is = getClass().getResourceAsStream("/br/com/gauderio/icon.png")) {
+            if (is != null) {
+                stage.getIcons().add(new javafx.scene.image.Image(is));
+            }
+        } catch (Exception ignored) {
+        }
+
+        stage.setTitle("Gauderio-ERP · Sistema Financeiro");
         stage.setMinWidth(1024);
         stage.setMinHeight(640);
         stage.setScene(scene);
         stage.show();
+    }
+
+    @Override
+    public void stop() {
+        Database.fecharConexao();
     }
 
     // =========================================================
@@ -108,9 +120,9 @@ public class Main extends Application {
         adicionarBotaoMenu(menu, "Dashboard", "Dashboard", "icon-dashboard", dashboardView);
 
         adicionarSecao(menu, "MOVIMENTAÇÕES");
-        adicionarBotaoMenu(menu, "Movimentações", "Registrar saída", "icon-saida", movimentacoesView,
-                () -> movimentacoesView.mostrarRegistro(true));
         adicionarBotaoMenu(menu, "Movimentações", "Registrar entrada", "icon-entrada", movimentacoesView,
+                () -> movimentacoesView.mostrarRegistro(true));
+        adicionarBotaoMenu(menu, "Movimentações", "Registrar saída", "icon-saida", movimentacoesView,
                 () -> movimentacoesView.mostrarRegistro(false));
         adicionarBotaoMenu(menu, "Movimentações", "Histórico", "icon-historico", movimentacoesView,
                 () -> movimentacoesView.mostrarHistorico());
@@ -128,6 +140,8 @@ public class Main extends Application {
         adicionarSecao(menu, "CONFIGURAÇÕES");
         adicionarBotaoMenu(menu, "Configurações", "Categorias", "icon-categorias", configuracoesView,
                 () -> configuracoesView.selecionarCategorias());
+        adicionarBotaoMenu(menu, "Configurações", "Backup & Dados", "icon-backup", configuracoesView,
+                () -> configuracoesView.selecionarBackup());
         adicionarBotaoMenu(menu, "Configurações", "Sobre", "icon-sobre", configuracoesView,
                 () -> configuracoesView.selecionarSobre());
 
@@ -219,6 +233,8 @@ public class Main extends Application {
         contasPagarView.refresh();
         contasReceberView.refresh();
         contasView.refresh();
+        relatoriosView.refresh();
+        configuracoesView.refresh();
     }
 
     // =========================================================

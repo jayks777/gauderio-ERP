@@ -2,39 +2,31 @@ package br.com.gauderio.ui;
 
 import br.com.gauderio.dao.TransacaoDAO;
 import br.com.gauderio.model.Transacao;
+import br.com.gauderio.util.ExportadorCsv;
 import br.com.gauderio.util.Formatador;
+import br.com.gauderio.util.IconeUtil;
 import br.com.gauderio.util.UiUtil;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Movimentações: registrar entradas e saídas (agora ou futuras) e consultar o histórico.
- * Substitui o antigo "Financeiro · Receitas e Despesas" com linguagem simples.
+ * Movimentações: registrar entradas e saídas (agora ou futuras), pesquisar e consultar o histórico completo.
  */
 public class MovimentacoesView extends BorderPane implements Refreshable {
 
@@ -49,11 +41,18 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
     private final Tab abaHistorico = new Tab("Histórico");
 
     private final ComboBox<String> filtroTipo = new ComboBox<>(
-            FXCollections.observableArrayList("Todas", "Saída", "Entrada"));
+            FXCollections.observableArrayList("Todas", "Entrada (Receita)", "Saída (Despesa)"));
     private final ComboBox<String> filtroPeriodo = new ComboBox<>(
             FXCollections.observableArrayList("Todos", "Este mês", "Mês anterior", "Últimos 12 meses"));
+    private final TextField campoBusca = new TextField();
 
-    private final Button btnMarcar = new Button("Marcar como paga");
+    // Labels do resumo no rodapé da tabela de histórico
+    private final Label lblQtdLancamentos = new Label("0 lançamentos");
+    private final Label lblTotalEntradas = new Label("Entradas: R$ 0,00");
+    private final Label lblTotalSaidas = new Label("Saídas: R$ 0,00");
+    private final Label lblSaldoPeriodo = new Label("Saldo: R$ 0,00");
+
+    private final Button btnMarcar = new Button("Marcar como concluída");
     private int idEmEdicao = -1;
 
     public MovimentacoesView() {
@@ -74,6 +73,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         filtroPeriodo.setValue("Todos");
         filtroTipo.valueProperty().addListener((obs, a, b) -> aplicarFiltros());
         filtroPeriodo.valueProperty().addListener((obs, a, b) -> aplicarFiltros());
+        campoBusca.textProperty().addListener((obs, a, b) -> aplicarFiltros());
 
         btnMarcar.setDisable(true);
         tabela.getSelectionModel().selectedItemProperty().addListener((obs, antes, depois) -> atualizarBotaoMarcar());
@@ -87,7 +87,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         aplicarFiltros();
     }
 
-    /** Abre a aba de registro já com o tipo escolhido (Saída = true). */
+    /** Abre a aba de registro já com o tipo escolhido (Entrada = true, Saída = false). */
     public void mostrarRegistro(boolean entrada) {
         idEmEdicao = -1;
         lblTituloForm.setText("Nova movimentação");
@@ -106,17 +106,17 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
     // CABEÇALHO
     // =========================================================
     private BorderPane criarCabecalho() {
-        Button btnEntrada = new Button("+ Registrar saída");
+        Button btnEntrada = new Button("+ Registrar entrada", IconeUtil.iconeBotao(IconeUtil.PATH_ENTRADA, "#ffffff"));
         btnEntrada.getStyleClass().addAll("btn", "btn-green");
         btnEntrada.setOnAction(e -> mostrarRegistro(true));
 
-        Button btnSaida = new Button("- Registrar entrada");
+        Button btnSaida = new Button("- Registrar saída", IconeUtil.iconeBotao(IconeUtil.PATH_SAIDA, "#ffffff"));
         btnSaida.getStyleClass().addAll("btn", "btn-red");
         btnSaida.setOnAction(e -> mostrarRegistro(false));
 
         return UiUtil.cabecalhoComAcoes(
                 "Movimentações",
-                "Registre todo dinheiro que entra ou sai da empresa.",
+                "Registre todo dinheiro que entra ou sai da empresa e consulte seu histórico.",
                 btnEntrada, btnSaida);
     }
 
@@ -140,11 +140,11 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
 
         lblTituloForm.getStyleClass().add("form-title");
 
-        Button salvar = new Button("Salvar");
+        Button salvar = new Button("Salvar", IconeUtil.iconeBotao(IconeUtil.PATH_SALVAR, "#ffffff"));
         salvar.getStyleClass().addAll("btn", "btn-green");
         salvar.setOnAction(e -> salvar());
 
-        Button limpar = new Button("Limpar");
+        Button limpar = new Button("Limpar", IconeUtil.iconeBotao(IconeUtil.PATH_LIMPAR, "#41505c"));
         limpar.getStyleClass().addAll("btn", "btn-outline");
         limpar.setOnAction(e -> {
             idEmEdicao = -1;
@@ -167,11 +167,75 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         Label titulo = new Label("Histórico de movimentações");
         titulo.getStyleClass().add("card-label");
 
-        HBox filtros = new HBox(8, new Label("Tipo:"), filtroTipo, new Label("Período:"), filtroPeriodo);
+        campoBusca.setPromptText("Buscar descrição, categoria ou conta...");
+        campoBusca.setPrefWidth(260);
+
+        Button btnExportar = new Button("Exportar (CSV)", IconeUtil.iconeBotao(IconeUtil.PATH_EXPORTAR, "#41505c"));
+        btnExportar.getStyleClass().addAll("btn", "btn-outline");
+        btnExportar.setOnAction(e -> exportarCsv());
+
+        Region espacoFiltro = new Region();
+        HBox.setHgrow(espacoFiltro, Priority.ALWAYS);
+
+        HBox filtros = new HBox(10,
+                new Label("Buscar:"), campoBusca,
+                new Label("Tipo:"), filtroTipo,
+                new Label("Período:"), filtroPeriodo,
+                espacoFiltro,
+                btnExportar);
         filtros.setAlignment(Pos.CENTER_LEFT);
         filtros.getStyleClass().add("filter-bar");
 
-        tabela.getColumns().addAll(
+        configurarColunasTabela();
+        tabela.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        VBox.setVgrow(tabela, Priority.ALWAYS);
+
+        btnMarcar.getStyleClass().addAll("btn", "btn-green");
+        btnMarcar.setGraphic(IconeUtil.iconeBotao(IconeUtil.PATH_CHECK_CIRCLE, "#ffffff"));
+        btnMarcar.setOnAction(e -> marcarSelecionado());
+
+        Button btnEditar = new Button("Editar", IconeUtil.iconeBotao(IconeUtil.PATH_EDITAR, "#41505c"));
+        btnEditar.getStyleClass().addAll("btn", "btn-outline");
+        btnEditar.setOnAction(e -> editarSelecionado());
+
+        Button btnExcluir = new Button("Excluir", IconeUtil.iconeBotao(IconeUtil.PATH_EXCLUIR, "#C8102E"));
+        btnExcluir.getStyleClass().addAll("btn", "btn-outline-red");
+        btnExcluir.setOnAction(e -> excluirSelecionado());
+
+        HBox acoes = new HBox(10, btnMarcar, btnEditar, btnExcluir);
+        acoes.setAlignment(Pos.CENTER_LEFT);
+
+        HBox barraTotais = criarBarraTotais();
+
+        card.getChildren().addAll(titulo, filtros, tabela, barraTotais, acoes);
+        return card;
+    }
+
+    private HBox criarBarraTotais() {
+        lblQtdLancamentos.getStyleClass().add("summary-count");
+        lblTotalEntradas.getStyleClass().add("summary-income");
+        lblTotalSaidas.getStyleClass().add("summary-expense");
+        lblSaldoPeriodo.getStyleClass().add("summary-balance");
+
+        Region espaco = new Region();
+        HBox.setHgrow(espaco, Priority.ALWAYS);
+
+        HBox valores = new HBox(18, lblTotalEntradas, lblTotalSaidas, lblSaldoPeriodo);
+        valores.setAlignment(Pos.CENTER_RIGHT);
+
+        HBox barra = new HBox(12, lblQtdLancamentos, espaco, valores);
+        barra.setAlignment(Pos.CENTER_LEFT);
+        barra.getStyleClass().add("history-summary-bar");
+        barra.setPadding(new Insets(8, 12, 8, 12));
+        return barra;
+    }
+
+    // =========================================================
+    // COLUNAS DA TABELA DE HISTÓRICO
+    // =========================================================
+    private void configurarColunasTabela() {
+        tabela.getColumns().clear();
+        tabela.getColumns().addAll(List.of(
                 colunaData(),
                 colunaTipo(),
                 colunaTexto("Descrição", "descricao", 220),
@@ -180,31 +244,9 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
                 colunaValor(),
                 colunaVencimento(),
                 colunaSituacao(),
-                colunaRecorrente());
-        tabela.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        VBox.setVgrow(tabela, Priority.ALWAYS);
-
-        btnMarcar.getStyleClass().addAll("btn", "btn-green");
-        btnMarcar.setOnAction(e -> marcarSelecionado());
-
-        Button btnEditar = new Button("Editar");
-        btnEditar.getStyleClass().addAll("btn", "btn-outline");
-        btnEditar.setOnAction(e -> editarSelecionado());
-
-        Button btnExcluir = new Button("Excluir");
-        btnExcluir.getStyleClass().addAll("btn", "btn-outline-red");
-        btnExcluir.setOnAction(e -> excluirSelecionado());
-
-        HBox acoes = new HBox(10, btnMarcar, btnEditar, btnExcluir);
-        acoes.setAlignment(Pos.CENTER_LEFT);
-
-        card.getChildren().addAll(titulo, filtros, tabela, acoes);
-        return card;
+                colunaRecorrente()));
     }
 
-    // =========================================================
-    // COLUNAS DA TABELA DE HISTÓRICO
-    // =========================================================
     private TableColumn<Transacao, LocalDate> colunaData() {
         TableColumn<Transacao, LocalDate> col = new TableColumn<>("Data");
         col.setCellValueFactory(new PropertyValueFactory<>("data"));
@@ -230,13 +272,14 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
                     setText("");
                     setStyle("");
                 } else {
-                    setText(item);
-                    setStyle("-fx-text-fill:" + ("Saída".equals(item) ? "#0E7A3C" : "#C8102E")
+                    boolean entrada = "Entrada".equalsIgnoreCase(item);
+                    setText(entrada ? "▲ Entrada" : "▼ Saída");
+                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E")
                             + "; -fx-font-weight:bold;");
                 }
             }
         });
-        col.setMinWidth(80);
+        col.setMinWidth(95);
         return col;
     }
 
@@ -260,12 +303,13 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
                     setStyle("");
                 } else {
                     setText(Formatador.moeda(item));
-                    boolean entrada = t != null && Transacao.TIPO_RECEITA.equals(t.getTipo());
-                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E") + ";");
+                    boolean entrada = t != null && t.isReceita();
+                    setStyle("-fx-text-fill:" + (entrada ? "#0E7A3C" : "#C8102E")
+                            + "; -fx-font-weight:bold;");
                 }
             }
         });
-        col.setMinWidth(110);
+        col.setMinWidth(115);
         return col;
     }
 
@@ -293,12 +337,19 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
                 String cor = switch (item) {
                     case "Paga", "Recebida" -> "#0E7A3C";
                     case "Vencida" -> "#C8102E";
-                    default -> "#9A6B00";
+                    default -> "#B7791F";
                 };
-                setStyle("-fx-text-fill:" + cor + "; -fx-font-weight:bold;");
+                String bg = switch (item) {
+                    case "Paga", "Recebida" -> "#eafaf1";
+                    case "Vencida" -> "#fde8e8";
+                    default -> "#fef5e7";
+                };
+                setStyle("-fx-text-fill:" + cor
+                        + "; -fx-background-color:" + bg
+                        + "; -fx-background-radius: 12px; -fx-padding: 3px 8px; -fx-font-weight:bold; -fx-alignment: center;");
             }
         });
-        col.setMinWidth(95);
+        col.setMinWidth(100);
         return col;
     }
 
@@ -334,7 +385,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
             } else {
                 transacaoDAO.insert(lista.get(0));
                 boolean entrada = Transacao.TIPO_RECEITA.equals(lista.get(0).getTipo());
-                alerta(entrada ? "Saída registrada com sucesso." : "Entrada registrada com sucesso.",
+                alerta(entrada ? "Entrada registrada com sucesso." : "Saída registrada com sucesso.",
                         Alert.AlertType.INFORMATION);
             }
             form.limpar();
@@ -348,10 +399,10 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         Transacao t = tabela.getSelectionModel().getSelectedItem();
         if (t == null) {
             btnMarcar.setDisable(true);
-            btnMarcar.setText("Marcar como paga");
+            btnMarcar.setText("Marcar como concluída");
             return;
         }
-        boolean receita = Transacao.TIPO_RECEITA.equals(t.getTipo());
+        boolean receita = t.isReceita();
         btnMarcar.setText(receita ? "Marcar como recebida" : "Marcar como paga");
         btnMarcar.setDisable(Transacao.STATUS_PAGO.equals(t.getStatus()));
     }
@@ -363,30 +414,28 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
             return;
         }
         if (Transacao.STATUS_PAGO.equals(t.getStatus())) {
-            alerta("Essa movimentação já foi " + (Transacao.TIPO_RECEITA.equals(t.getTipo()) ? "recebida." : "paga."),
+            alerta("Essa movimentação já foi " + (t.isReceita() ? "recebida." : "paga."),
                     Alert.AlertType.WARNING);
             return;
         }
         dialogDataPagamento(t, dataPagamento -> {
             transacaoDAO.marcarPaga(t.getId(), dataPagamento);
-            boolean receita = Transacao.TIPO_RECEITA.equals(t.getTipo());
-            alerta(receita ? "Conta marcada como recebida." : "Conta marcada como paga.",
+            alerta(t.isReceita() ? "Conta marcada como recebida." : "Conta marcada como paga.",
                     Alert.AlertType.INFORMATION);
             aplicarFiltros();
             onDadosAlterados.run();
         });
     }
 
-    /** Diálogo que pede a data em que a conta foi paga/recebida antes de concluir. */
     private void dialogDataPagamento(Transacao t, java.util.function.Consumer<LocalDate> aoConfirmar) {
-        boolean receita = Transacao.TIPO_RECEITA.equals(t.getTipo());
+        boolean receita = t.isReceita();
         Dialog<LocalDate> diag = new Dialog<>();
         diag.setTitle(receita ? "Marcar como recebida" : "Marcar como paga");
-        diag.setHeaderText("Confirmar o pagamento de \"" + t.getDescricao() + "\"?");
+        diag.setHeaderText("Confirmar a liquidação de \"" + t.getDescricao() + "\"?");
 
         DatePicker data = new DatePicker(LocalDate.now());
         Label ajuda = new Label("Informe a data em que o dinheiro " + (receita ? "entrou" : "saiu")
-                + ". O saldo da conta será atualizado.");
+                + ". O saldo da conta bancária será atualizado automaticamente.");
         ajuda.getStyleClass().add("form-hint");
         ajuda.setWrapText(true);
         VBox conteudo = new VBox(10, new Label("Data do pagamento:"), data, ajuda);
@@ -404,7 +453,6 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         });
     }
 
-    // Edição, exclusão, filtros e avisos
     private void editarSelecionado() {
         Transacao t = tabela.getSelectionModel().getSelectedItem();
         if (t == null) {
@@ -412,7 +460,7 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
             return;
         }
         idEmEdicao = t.getId();
-        lblTituloForm.setText("Editando movimentação");
+        lblTituloForm.setText("Editando movimentação #" + t.getId());
         form.limpar();
         form.preencherParaEdicao(t);
         abas.getSelectionModel().select(abaRegistrar);
@@ -425,9 +473,10 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
             return;
         }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Excluir movimentação");
         confirm.setHeaderText(null);
-        confirm.setContentText("Excluir \"" + t.getDescricao() + "\"? Esta ação não pode ser desfeita.");
-        ButtonType excluirBtn = new ButtonType("Excluir", ButtonBar.ButtonData.OK_DONE);
+        confirm.setContentText("Excluir definitivamente \"" + t.getDescricao() + "\"? Esta ação não pode ser desfeita.");
+        ButtonType excluirBtn = new ButtonType("Sim, excluir", ButtonBar.ButtonData.OK_DONE);
         ButtonType cancelarBtn = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
         confirm.getButtonTypes().setAll(excluirBtn, cancelarBtn);
         confirm.showAndWait().filter(b -> b == excluirBtn).ifPresent(b -> {
@@ -438,10 +487,32 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         });
     }
 
+    private void exportarCsv() {
+        List<Transacao> lista = tabela.getItems();
+        if (lista == null || lista.isEmpty()) {
+            alerta("Não há movimentações para exportar na lista atual.", Alert.AlertType.WARNING);
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Salvar movimentações em CSV");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Planilha CSV (*.csv)", "*.csv"));
+        chooser.setInitialFileName("movimentacoes-" + LocalDate.now() + ".csv");
+        File arquivo = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow());
+        if (arquivo != null) {
+            try {
+                ExportadorCsv.exportarTransacoes(lista, arquivo);
+                alerta("Arquivo CSV exportado com sucesso em:\n" + arquivo.getAbsolutePath(), Alert.AlertType.INFORMATION);
+            } catch (Exception ex) {
+                alerta("Erro ao exportar arquivo: " + ex.getMessage(), Alert.AlertType.ERROR);
+            }
+        }
+    }
+
     private void aplicarFiltros() {
         List<Transacao> todos = transacaoDAO.findAll();
         String tipo = filtroTipo.getValue();
         String periodo = filtroPeriodo.getValue();
+        String termo = campoBusca.getText() == null ? "" : campoBusca.getText().trim().toLowerCase();
 
         LocalDate hoje = LocalDate.now();
         LocalDate inicio = null;
@@ -459,9 +530,12 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
         }
 
         List<Transacao> resultado = new ArrayList<>();
+        double totalEntradas = 0;
+        double totalSaidas = 0;
+
         for (Transacao t : todos) {
-            if (!"Todas".equals(tipo)) {
-                String tipoFiltro = "Saída".equals(tipo) ? Transacao.TIPO_RECEITA : Transacao.TIPO_DESPESA;
+            if (tipo != null && !"Todas".equals(tipo)) {
+                String tipoFiltro = tipo.startsWith("Entrada") ? Transacao.TIPO_RECEITA : Transacao.TIPO_DESPESA;
                 if (!tipoFiltro.equals(t.getTipo())) {
                     continue;
                 }
@@ -469,10 +543,32 @@ public class MovimentacoesView extends BorderPane implements Refreshable {
             if (inicio != null && (t.getData().isBefore(inicio) || t.getData().isAfter(fim))) {
                 continue;
             }
+            if (!termo.isEmpty()) {
+                String desc = t.getDescricao() == null ? "" : t.getDescricao().toLowerCase();
+                String cat = t.getCategoria() == null ? "" : t.getCategoria().toLowerCase();
+                String conta = t.getConta() == null ? "" : t.getConta().toLowerCase();
+                if (!desc.contains(termo) && !cat.contains(termo) && !conta.contains(termo)) {
+                    continue;
+                }
+            }
             resultado.add(t);
+            if (t.isReceita()) {
+                totalEntradas += t.getValor();
+            } else {
+                totalSaidas += t.getValor();
+            }
         }
+
         tabela.getItems().setAll(resultado);
         tabela.refresh();
+
+        // Atualiza a barra de resumo de totais
+        lblQtdLancamentos.setText(resultado.size() + (resultado.size() == 1 ? " lançamento" : " lançamentos"));
+        lblTotalEntradas.setText("Entradas: " + Formatador.moeda(totalEntradas));
+        lblTotalSaidas.setText("Saídas: " + Formatador.moeda(totalSaidas));
+        double saldo = totalEntradas - totalSaidas;
+        lblSaldoPeriodo.setText("Saldo: " + Formatador.moeda(saldo));
+        lblSaldoPeriodo.setStyle("-fx-text-fill:" + (saldo >= 0 ? "#0E7A3C" : "#C8102E") + "; -fx-font-weight: bold;");
     }
 
     private void alerta(String msg, Alert.AlertType tipo) {

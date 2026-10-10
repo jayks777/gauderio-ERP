@@ -5,6 +5,7 @@ import br.com.gauderio.dao.MovimentacaoDAO;
 import br.com.gauderio.model.ContaBancaria;
 import br.com.gauderio.model.MovimentacaoSaldo;
 import br.com.gauderio.util.Formatador;
+import br.com.gauderio.util.IconeUtil;
 import br.com.gauderio.util.UiUtil;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.collections.FXCollections;
@@ -46,7 +47,7 @@ public class ContasView extends BorderPane implements Refreshable {
     private final Label lblContaMov = new Label("Selecione uma conta na lista");
 
     private final ComboBox<String> tipoMovCombo = new ComboBox<>(
-            FXCollections.observableArrayList("Saída (aumenta o saldo)", "Entrada (diminui o saldo)"));
+            FXCollections.observableArrayList("Entrada (aumenta o saldo)", "Saída (diminui o saldo)"));
     private final TextField descMovField = new TextField();
     private final TextField valorMovField = new TextField();
 
@@ -80,7 +81,7 @@ public class ContasView extends BorderPane implements Refreshable {
         VBox area = new VBox(16, cabecalho, linhaContas, linhaMov);
         setCenter(area);
 
-        tipoMovCombo.setValue("Saída (aumenta o saldo)");
+        tipoMovCombo.setValue("Entrada (aumenta o saldo)");
         atualizarSobre();
     }
 
@@ -128,15 +129,15 @@ public class ContasView extends BorderPane implements Refreshable {
         ajudaSaldo.setWrapText(true);
         ajudaSaldo.setMaxWidth(290);
 
-        Button salvar = new Button("Salvar");
+        Button salvar = new Button("Salvar", IconeUtil.iconeBotao(IconeUtil.PATH_SALVAR, "#ffffff"));
         salvar.getStyleClass().addAll("btn", "btn-green");
         salvar.setOnAction(e -> salvarConta());
 
-        Button novo = new Button("Nova conta");
+        Button novo = new Button("Nova conta", IconeUtil.iconeBotao(IconeUtil.PATH_MAIS, "#41505c"));
         novo.getStyleClass().addAll("btn", "btn-outline");
         novo.setOnAction(e -> novoConta());
 
-        Button excluir = new Button("Excluir conta");
+        Button excluir = new Button("Excluir conta", IconeUtil.iconeBotao(IconeUtil.PATH_EXCLUIR, "#C8102E"));
         excluir.getStyleClass().addAll("btn", "btn-outline-red");
         excluir.setOnAction(e -> excluirConta());
 
@@ -307,7 +308,7 @@ public class ContasView extends BorderPane implements Refreshable {
         grid.add(new Label("Valor"), 0, 4);
         grid.add(valorMovField, 0, 5);
 
-        Button registrar = new Button("Registrar ajuste");
+        Button registrar = new Button("Registrar ajuste", IconeUtil.iconeBotao(IconeUtil.PATH_CHECK, "#3a2b00"));
         registrar.getStyleClass().addAll("btn", "btn-yellow");
         registrar.setOnAction(e -> registrarMovimentacao());
 
@@ -338,7 +339,7 @@ public class ContasView extends BorderPane implements Refreshable {
                     setStyle("");
                     return;
                 }
-                setText("ENTRADA".equals(tipo) ? "Saída" : "Entrada");
+                setText("ENTRADA".equals(tipo) ? "Entrada" : "Saída");
                 setStyle("ENTRADA".equals(tipo)
                         ? "-fx-text-fill:#0E7A3C; -fx-font-weight:bold;"
                         : "-fx-text-fill:#C8102E; -fx-font-weight:bold;");
@@ -392,12 +393,9 @@ public class ContasView extends BorderPane implements Refreshable {
         }
 
         String valorCombo = tipoMovCombo.getValue();
-        String tipo;
-        if ("Entrada (diminui o saldo)".equals(valorCombo)) {
-            tipo = MovimentacaoSaldo.SAIDA;
-        } else {
-            tipo = MovimentacaoSaldo.ENTRADA;
-        }
+        String tipo = (valorCombo != null && valorCombo.startsWith("Saída"))
+                ? MovimentacaoSaldo.SAIDA
+                : MovimentacaoSaldo.ENTRADA;
         movimentacaoDAO.insert(new MovimentacaoSaldo(conta.getId(), tipo, descricao, valor, LocalDate.now()));
 
         descMovField.clear();
